@@ -106,12 +106,19 @@ st.markdown("""
 .kepala .desk,.sc-ket,.sc-lab,.eyebrow{color:#475569 !important}
 .perhatian{padding:.45rem 0;border-bottom:1px solid #eef0f4;font-size:.92rem;color:#1f2937}
 .perhatian:last-child{border-bottom:0}
-.st-key-menuhp{display:none}
 @media (max-width:768px){
-  .st-key-menuhp{display:block;margin-bottom:.4rem}
   .block-container{padding:3.4rem 1rem 4rem}
   .kepala{padding:.9rem 1rem}
   .judul-hal{font-size:1.35rem}
+}
+/* Di HP tabel tidak ditumpuk ke bawah, tapi dilebarkan dan bisa digeser ke samping */
+@media (max-width:640px){
+  .st-key-kartu_tabel,.st-key-kartu_barang,[class*="st-key-kartu_tgl"]{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  [data-testid="stHorizontalBlock"]:has(.brg),[data-testid="stHorizontalBlock"]:has(.thead-s){flex-wrap:nowrap !important;min-width:780px}
+  [data-testid="stHorizontalBlock"]:has(.brg) > [data-testid="stColumn"],[data-testid="stHorizontalBlock"]:has(.thead-s) > [data-testid="stColumn"]{min-width:0 !important;width:auto !important}
+  [data-testid="stHorizontalBlock"]:has(.brg) [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important;min-width:0 !important}
+  [data-testid="stHorizontalBlock"]:has(.brg) [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]{min-width:0 !important;width:auto !important}
+  .st-key-kartu_tabel .garis,.st-key-kartu_barang .garis,[class*="st-key-kartu_tgl"] .garis{min-width:780px}
 }
 </style>
 """, unsafe_allow_html=True)
@@ -871,11 +878,6 @@ DESKRIPSI = {
 }
 _grup = ("MASTER" if halaman in MASTER else "RINGKASAN" if halaman == "Beranda"
          else "PANTAU" if halaman in PANTAU else "BARANG")
-# Pilihan menu cadangan, hanya tampil di layar HP (cadangan kalau tombol sidebar sulit dijangkau)
-with st.container(key="menuhp"):
-    st.session_state.menuhp_pilih = halaman
-    st.selectbox("Pindah menu", HALAMAN, key="menuhp_pilih",
-                 on_change=lambda: atur("halaman", st.session_state.menuhp_pilih))
 st.markdown(f'<div class="kepala"><div><div class="eyebrow">{_grup}</div>'
             f'<div class="judul-hal">{html.escape(halaman)}</div>'
             f'<div class="desk">{html.escape(DESKRIPSI.get(halaman, ""))}</div></div></div>',
