@@ -99,6 +99,8 @@ st.markdown("""
 .st-ok{color:#166534;font-weight:600}.st-warn{color:#8a5a00;font-weight:600}.st-bad{color:#b42318;font-weight:600}
 .lencana{display:inline-block;font-size:.66rem;font-weight:700;border-radius:999px;padding:.05rem .5rem;margin-left:.4rem;vertical-align:middle}
 .lc-m{background:#fff4d6;color:#8a5a00}.lc-r{background:#fde8e6;color:#b42318}.lc-b{background:#e6eefb;color:#2f5d9e}
+.st-key-kartu_filter,.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_perhatian,[class*="st-key-kartu_g"],[class*="st-key-kartu_tgl"],.statcard,.kepala,[data-testid="stForm"]{color:#111827 !important}
+.kepala .desk,.sc-ket,.sc-lab,.eyebrow{color:#475569 !important}
 .perhatian{padding:.45rem 0;border-bottom:1px solid #eef0f4;font-size:.92rem;color:#1f2937}
 .perhatian:last-child{border-bottom:0}
 .st-key-menuhp{display:none}
