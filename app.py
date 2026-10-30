@@ -47,6 +47,9 @@ st.markdown("""
   color:#fff;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center}
 .pengguna .nm{font-size:.84rem;font-weight:600;color:#0f172a;line-height:1.15}
 .pengguna .pr{font-size:.7rem;color:#64748b;text-transform:capitalize}
+.pengguna.sb{background:rgba(255,255,255,.07);margin:.2rem 0 .6rem;border-radius:12px;padding:.5rem .7rem .5rem .5rem}
+[data-testid="stSidebar"] .pengguna.sb .nm{color:#fff;font-size:.88rem}
+[data-testid="stSidebar"] .pengguna.sb .pr{color:#94a3b8}
 [data-testid="stSidebar"]{background:#0b1220}
 [data-testid="stSidebar"] *{color:#e5e7eb}
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"] *{color:#94a3b8}
@@ -165,7 +168,8 @@ def rp(n) -> str:
 
 def data_kosong() -> dict:
     return {
-        "lokasi": [],     # [{"id","nama"}]  contoh: Lemari kamar, Kotak pensil biru
+        "tempat": [],     # [{"id","nama"}]  tingkat 1, contoh: Rumah A, Rumah B, Kantor
+        "lokasi": [],     # [{"id","nama","tempat"(id tempat, boleh kosong)}]  tingkat 2, contoh: Lemari kamar
         "sublokasi": [],  # [{"id","nama","lokasi"(id lokasi induk)}]  contoh: Kotak 2
         "kategori": [],   # [{"id","nama"}]
         "barang": [],     # [{"id","nama","lokasi","sublokasi","kategori","jumlah","catatan","diubah",
@@ -563,13 +567,23 @@ for kunci, awal in data_kosong().items():
 
 # Dibuka dari pindaian label QR: ?lokasi=<id>&sub=<id> langsung membuka daftar isi tempat itu.
 _qp_lok = st.query_params.get("lokasi")
-if _qp_lok:
-    if any(x["id"] == _qp_lok for x in D["lokasi"]):
+_qp_tem = st.query_params.get("tempat")
+if _qp_lok or _qp_tem:
+    _lok_qr = next((x for x in D["lokasi"] if x["id"] == _qp_lok), None) if _qp_lok else None
+    if _lok_qr:
         _qp_sub = st.query_params.get("sub", "")
         st.session_state.halaman = "Cari barang"
+        st.session_state.cari_tempat = _lok_qr.get("tempat") or "semua"
         st.session_state.cari_lok = _qp_lok
         st.session_state.cari_sub = _qp_sub if any(
             x["id"] == _qp_sub and x["lokasi"] == _qp_lok for x in D["sublokasi"]) else "semua"
+        st.session_state.cari_kat = "semua"
+        st.session_state.cari_q = ""
+    elif _qp_tem and any(t["id"] == _qp_tem for t in D["tempat"]):
+        st.session_state.halaman = "Cari barang"
+        st.session_state.cari_tempat = _qp_tem
+        st.session_state.cari_lok = "semua"
+        st.session_state.cari_sub = "semua"
         st.session_state.cari_kat = "semua"
         st.session_state.cari_q = ""
     st.query_params.clear()
@@ -619,9 +633,24 @@ def sub_dari(b: dict):
     return next((x for x in D["sublokasi"] if x["id"] == sid and x["lokasi"] == b.get("lokasi")), None)
 
 
+def tempat_dari_lok(l: dict):
+    """Tempat (rumah, kantor, dst.) dari sebuah lokasi, atau None kalau belum diatur."""
+    return next((t for t in D["tempat"] if t["id"] == l.get("tempat")), None)
+
+
+def nama_lok(l: dict) -> str:
+    """Nama lokasi lengkap dengan tempatnya: 'Rumah A › Lemari kamar'."""
+    t = tempat_dari_lok(l)
+    return f"{t['nama']} › {l['nama']}" if t else l["nama"]
+
+
+def daftar_lokasi():
+    return sorted(D["lokasi"], key=lambda l: nama_lok(l).lower())
+
+
 def nama_lokasi(b: dict) -> str:
     x = lokasi_dari(b)
-    return x["nama"] if x else TANPA
+    return nama_lok(x) if x else TANPA
 
 
 def nama_kat(b: dict) -> str:
@@ -638,17 +667,17 @@ def nama_tempat(b: dict) -> str:
 def kelompok(brg):
     """Bagi barang per lokasi, lalu per sub lokasi di dalamnya."""
     hasil = []
-    for l in D["lokasi"]:
+    for l in daftar_lokasi():
         milik = [b for b in brg if b.get("lokasi") == l["id"]]
         langsung = [b for b in milik if sub_dari(b) is None]
         if langsung:
-            hasil.append((l["nama"], langsung))
+            hasil.append((nama_lok(l), langsung))
         for s in D["sublokasi"]:
             if s["lokasi"] != l["id"]:
                 continue
             ang = [b for b in milik if b.get("sublokasi") == s["id"]]
             if ang:
-                hasil.append((f"{l['nama']} › {s['nama']}", ang))
+                hasil.append((f"{nama_lok(l)} › {s['nama']}", ang))
     ids = {l["id"] for l in D["lokasi"]}
     lain = [b for b in brg if b.get("lokasi") not in ids]
     if lain:
@@ -767,7 +796,7 @@ if not cfg_github():
 
 UTAMA = ["Cari barang", "Kelola barang", "Pindah massal", "Riwayat perpindahan"]
 PANTAU = ["Pinjam-meminjam", "Perlu beli", "Kedaluwarsa dan garansi", "Nilai barang"]
-MASTER = ["Lokasi", "Sub lokasi", "Kategori", "Label QR", "Cadangan dan pindah data"]
+MASTER = ["Tempat", "Lokasi", "Sub lokasi", "Kategori", "Label QR", "Cadangan dan pindah data"]
 HALAMAN = ["Beranda"] + UTAMA + PANTAU + (MASTER if adalah_admin() else [])
 if st.session_state.get("halaman") not in HALAMAN:
     st.session_state.halaman = "Beranda"
@@ -776,7 +805,7 @@ IKON = {"Beranda": "home", "Cari barang": "search", "Kelola barang": "inventory_
         "Pindah massal": "swap_horiz", "Riwayat perpindahan": "history",
         "Pinjam-meminjam": "handshake", "Perlu beli": "shopping_cart",
         "Kedaluwarsa dan garansi": "event_busy", "Nilai barang": "payments",
-        "Lokasi": "place", "Sub lokasi": "account_tree", "Kategori": "sell",
+        "Tempat": "home_work", "Lokasi": "place", "Sub lokasi": "account_tree", "Kategori": "sell",
         "Label QR": "qr_code_2", "Cadangan dan pindah data": "backup"}
 LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">'
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
@@ -787,6 +816,11 @@ LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.or
 with st.sidebar:
     st.markdown(f'<div class="brand">{LOGO}<div><div class="b1">Pelacak Barang</div>'
                 '<div class="b2">Di mana barangku?</div></div></div>', unsafe_allow_html=True)
+    _us = st.session_state.get("user")
+    if _us:
+        st.markdown(f'<div class="pengguna sb"><div class="av">{html.escape(_us["nama"][:1].upper())}</div><div>'
+                    f'<div class="nm">{html.escape(_us["nama"])}</div>'
+                    f'<div class="pr">{html.escape(_us["peran"])}</div></div></div>', unsafe_allow_html=True)
 
     def tombol_nav(h):
         st.button(h, key=f"nav_{h}", use_container_width=True, icon=f":material/{IKON[h]}:",
@@ -815,7 +849,6 @@ with st.sidebar:
     if st.session_state.get("user"):
         u = st.session_state.user
         st.markdown('<div class="sp"></div>', unsafe_allow_html=True)
-        st.caption(f"Masuk sebagai **{u['nama']}** ({u['peran']})")
         st.button("Keluar", key="nav_keluar", use_container_width=True,
                   icon=":material/logout:", on_click=keluar)
 
@@ -829,19 +862,15 @@ DESKRIPSI = {
     "Perlu beli": "Barang yang habis atau jumlahnya nol, jadi daftar belanja.",
     "Kedaluwarsa dan garansi": "Pantau tanggal kedaluwarsa dan masa garansi.",
     "Nilai barang": "Total nilai barang berdasarkan harga beli.",
-    "Lokasi": "Tempat penyimpanan, misalnya lemari kamar atau kotak pensil biru.",
-    "Sub lokasi": "Bagian di dalam lokasi, misalnya kotak 2 atau rak atas.",
+    "Tempat": "Tingkat pertama: rumah atau kantor tempat barang disimpan.",
+    "Lokasi": "Tingkat kedua: lemari, rak, atau kotak di dalam satu tempat.",
+    "Sub lokasi": "Tingkat ketiga: bagian di dalam lokasi, misalnya laci 2 atau rak atas.",
     "Kategori": "Pengelompokan jenis barang.",
     "Label QR": "Cetak label QR untuk ditempel di lemari atau kotak. Dipindai, langsung muncul isinya.",
     "Cadangan dan pindah data": "Unduh cadangan data atau muat data dari berkas.",
 }
 _grup = ("MASTER" if halaman in MASTER else "RINGKASAN" if halaman == "Beranda"
          else "PANTAU" if halaman in PANTAU else "BARANG")
-_u = st.session_state.get("user")
-_chip = ""
-if _u:
-    _chip = (f'<div class="pengguna"><div class="av">{html.escape(_u["nama"][:1].upper())}</div><div>'
-             f'<div class="nm">{html.escape(_u["nama"])}</div><div class="pr">{html.escape(_u["peran"])}</div></div></div>')
 # Pilihan menu cadangan, hanya tampil di layar HP (cadangan kalau tombol sidebar sulit dijangkau)
 with st.container(key="menuhp"):
     st.session_state.menuhp_pilih = halaman
@@ -849,7 +878,7 @@ with st.container(key="menuhp"):
                  on_change=lambda: atur("halaman", st.session_state.menuhp_pilih))
 st.markdown(f'<div class="kepala"><div><div class="eyebrow">{_grup}</div>'
             f'<div class="judul-hal">{html.escape(halaman)}</div>'
-            f'<div class="desk">{html.escape(DESKRIPSI.get(halaman, ""))}</div></div>{_chip}</div>',
+            f'<div class="desk">{html.escape(DESKRIPSI.get(halaman, ""))}</div></div></div>',
             unsafe_allow_html=True)
 
 # -------------------------------------------------------------------- beranda
@@ -867,6 +896,7 @@ if halaman == "Beranda":
             '<div class="statcard"><div class="sc-kiri"><span class="tag">Ringkasan</span>'
             f'<div class="sc-judul">{len(brg)} jenis barang</div>'
             f'<div class="sc-ket">{total_jml} buah di {lok_dipakai} lokasi</div></div>'
+            f'<div class="sc-stat"><div class="sc-lab">Tempat</div><div class="sc-val">{len(D["tempat"])}</div></div>'
             f'<div class="sc-stat"><div class="sc-lab">Lokasi</div><div class="sc-val">{len(D["lokasi"])}</div></div>'
             f'<div class="sc-stat"><div class="sc-lab">Sub lokasi</div><div class="sc-val">{len(D["sublokasi"])}</div></div>'
             f'<div class="sc-stat"><div class="sc-lab">Kategori</div><div class="sc-val">{len(D["kategori"])}</div></div>'
@@ -920,14 +950,20 @@ if halaman == "Cari barang":
             q = " ".join(st.text_input("Pencarian", icon=":material/search:", key="cari_q",
                                        placeholder="Cari nama, lokasi, kategori, atau catatan...",
                                        label_visibility="collapsed").lower().split())
-            c1, c2, c3 = st.columns(3)
-            pl = {l["id"]: l["nama"] for l in D["lokasi"]}
+            c0, c1, c2, c3 = st.columns(4)
+            pt = {t["id"]: t["nama"] for t in sorted(D["tempat"], key=lambda t: t["nama"].lower())}
+            if st.session_state.get("cari_tempat", "semua") not in ["semua"] + list(pt):
+                st.session_state.cari_tempat = "semua"
+            f_tem = c0.selectbox("Tempat", ["semua"] + list(pt), key="cari_tempat",
+                                 format_func=lambda i: "Semua tempat" if i == "semua" else pt[i])
+            pl = {l["id"]: (l["nama"] if f_tem != "semua" else nama_lok(l)) for l in daftar_lokasi()
+                  if f_tem == "semua" or l.get("tempat") == f_tem}
             if st.session_state.get("cari_lok", "semua") not in ["semua"] + list(pl):
                 st.session_state.cari_lok = "semua"
             f_lok = c1.selectbox("Lokasi", ["semua"] + list(pl), key="cari_lok",
                                  format_func=lambda i: "Semua lokasi" if i == "semua" else pl[i])
-            psub = {s["id"]: (s["nama"] if f_lok != "semua" else f"{pl.get(s['lokasi'], '?')} › {s['nama']}")
-                    for s in D["sublokasi"] if f_lok == "semua" or s["lokasi"] == f_lok}
+            psub = {s["id"]: (s["nama"] if f_lok != "semua" else f"{pl[s['lokasi']]} › {s['nama']}")
+                    for s in D["sublokasi"] if s["lokasi"] in pl and (f_lok == "semua" or s["lokasi"] == f_lok)}
             if st.session_state.get("cari_sub", "semua") not in ["semua"] + list(psub):
                 st.session_state.cari_sub = "semua"
             f_sub = c2.selectbox("Sub lokasi", ["semua"] + list(psub), key="cari_sub",
@@ -939,6 +975,8 @@ if halaman == "Cari barang":
                                  format_func=lambda i: "Semua kategori" if i == "semua" else pk[i])
             tampil_foto = st.toggle("Tampilkan foto", value=True, key="cari_foto")
         hasil = D["barang"]
+        if f_tem != "semua":
+            hasil = [b for b in hasil if (lokasi_dari(b) or {}).get("tempat") == f_tem]
         if f_lok != "semua":
             hasil = [b for b in hasil if b.get("lokasi") == f_lok]
         if f_sub != "semua":
@@ -1040,7 +1078,7 @@ def halaman_barang():
             f1, f2 = st.columns([4, 1])
             nama = f1.text_input("Nama barang", value=b.get("nama", ""), placeholder="Contoh: Parfum")
             jumlah = f2.number_input("Jumlah", min_value=0, value=jumlah_b(b) if b else 1, step=1)
-            pl = {l["id"]: l["nama"] for l in D["lokasi"]}
+            pl = {l["id"]: nama_lok(l) for l in daftar_lokasi()}
             ids_l = list(pl)
             lok = st.selectbox("Lokasi", ids_l, index=idx(ids_l, b.get("lokasi", "")),
                                format_func=lambda i: pl[i])
@@ -1141,7 +1179,7 @@ def halaman_pindah():
         st.session_state.pm_pilih = []
     by_id = {b["id"]: b for b in D["barang"]}
     urut = sorted(D["barang"], key=lambda x: x["nama"].lower())
-    pl = {l["id"]: l["nama"] for l in D["lokasi"]}
+    pl = {l["id"]: nama_lok(l) for l in daftar_lokasi()}
     st.session_state.pm_pilih = [i for i in st.session_state.get("pm_pilih", []) if i in by_id]
     with st.container(key="kartu_barang"):
         st.markdown("#### 1. Pilih barang")
@@ -1458,11 +1496,15 @@ body{font-family:Arial,Helvetica,sans-serif;margin:16px}
 
 def _target_label():
     hasil = []
-    for l in D["lokasi"]:
-        hasil.append({"kode": l["id"], "judul": l["nama"], "sub": "", "q": f"lokasi={l['id']}"})
+    for t in sorted(D["tempat"], key=lambda t: t["nama"].lower()):
+        hasil.append({"kode": t["id"], "judul": t["nama"], "sub": "", "q": f"tempat={t['id']}"})
+    for l in daftar_lokasi():
+        tem = tempat_dari_lok(l)
+        hasil.append({"kode": l["id"], "judul": l["nama"], "sub": tem["nama"] if tem else "",
+                      "q": f"lokasi={l['id']}"})
         for s in D["sublokasi"]:
             if s["lokasi"] == l["id"]:
-                hasil.append({"kode": s["id"], "judul": s["nama"], "sub": l["nama"],
+                hasil.append({"kode": s["id"], "judul": s["nama"], "sub": nama_lok(l),
                               "q": f"lokasi={l['id']}&sub={s['id']}"})
     return hasil
 
@@ -1551,12 +1593,20 @@ def daftar_sederhana(judul: str, kunci: str, hint: str):
                         x["nama"] = baru
                         selesai_simpan("Nama diubah.", **{k_edit: None})
             elif st.session_state.get(k_hapus) == x["id"]:
-                n_pakai = sum(1 for b in D["barang"] if b.get(kunci) == x["id"])
-                c1.write(f"Hapus **{x['nama']}**?" + (f" ({n_pakai} barang jadi tanpa {judul.lower()})"
-                                                       if n_pakai else ""))
+                if kunci == "tempat":
+                    n_pakai = sum(1 for l in D["lokasi"] if l.get("tempat") == x["id"])
+                    akibat = "lokasi jadi tanpa tempat"
+                else:
+                    n_pakai = sum(1 for b in D["barang"] if b.get(kunci) == x["id"])
+                    akibat = f"barang jadi tanpa {judul.lower()}"
+                c1.write(f"Hapus **{x['nama']}**?" + (f" ({n_pakai} {akibat})" if n_pakai else ""))
                 c3.button("Batal", key=f"bh_{kunci}_{x['id']}", on_click=atur, args=(k_hapus, None))
                 if c2.button("Ya, hapus", key=f"yh_{kunci}_{x['id']}", type="primary"):
                     D[kunci] = [y for y in D[kunci] if y["id"] != x["id"]]
+                    if kunci == "tempat":     # lokasi di dalamnya tetap ada, hanya lepas dari tempat
+                        for l in D["lokasi"]:
+                            if l.get("tempat") == x["id"]:
+                                l.pop("tempat", None)
                     if kunci == "lokasi":     # sub lokasi di bawahnya ikut hilang
                         D["sublokasi"] = [y for y in D["sublokasi"] if y["lokasi"] != x["id"]]
                     selesai_simpan("Dihapus.", **{k_hapus: None})
@@ -1582,13 +1632,13 @@ def halaman_sublokasi():
     if not D["lokasi"]:
         st.info("Buat lokasi dulu di menu Lokasi, lalu tambahkan sub lokasinya di sini.")
         return
-    peta = {l["id"]: l["nama"] for l in D["lokasi"]}
+    peta = {l["id"]: nama_lok(l) for l in daftar_lokasi()}
     with st.expander(f"Sub lokasi ({len(D['sublokasi'])})", expanded=True):
-        st.caption("Sub lokasi berada di bawah satu lokasi (misalnya Kotak 2 di Lemari kamar). "
+        st.caption("Sub lokasi berada di bawah satu lokasi (misalnya Laci 2 di Lemari kamar). "
                    "Menghapus sub lokasi tidak menghapus barangnya.")
-        for l in D["lokasi"]:
+        for l in daftar_lokasi():
             milik = [x for x in D["sublokasi"] if x["lokasi"] == l["id"]]
-            st.markdown(f'<div class="bidang">{html.escape(l["nama"])} · {len(milik)} sub lokasi</div>',
+            st.markdown(f'<div class="bidang">{html.escape(nama_lok(l))} · {len(milik)} sub lokasi</div>',
                         unsafe_allow_html=True)
             if not milik:
                 st.caption("Belum ada sub lokasi.")
@@ -1633,6 +1683,88 @@ def halaman_sublokasi():
                     st.error("Nama itu sudah ada di lokasi ini.")
                 else:
                     D["sublokasi"].append({"id": uuid.uuid4().hex[:8], "nama": nama, "lokasi": induk})
+                    selesai_simpan("Ditambahkan.")
+
+
+def halaman_lokasi():
+    """Lokasi (lemari, rak, kotak) berada di dalam satu tempat (rumah, kantor)."""
+    pt = {t["id"]: t["nama"] for t in sorted(D["tempat"], key=lambda t: t["nama"].lower())}
+    ops = [""] + list(pt)
+
+    def fmt(i):
+        return "Tanpa tempat" if not i else pt[i]
+
+    if not pt:
+        st.info("Isi dulu nama tempat (misalnya Rumah A, Rumah B, Kantor) di menu Tempat. "
+                "Lokasi tanpa tempat tetap bisa dipakai.")
+    with st.expander(f"Lokasi ({len(D['lokasi'])})", expanded=True):
+        st.caption("Lokasi adalah lemari, rak, atau kotak di dalam satu tempat (misalnya Lemari kamar di Rumah A). "
+                   "Menghapus lokasi ikut menghapus sub lokasinya. Barangnya tidak terhapus.")
+        urut = sorted(D["lokasi"], key=lambda l: l["nama"].lower())
+        for tid, tnama in list(pt.items()) + [("", "Belum diatur tempatnya")]:
+            milik = [x for x in urut if (x.get("tempat") == tid if tid else x.get("tempat") not in pt)]
+            if not tid and not milik:
+                continue
+            st.markdown(f'<div class="bidang">{html.escape(tnama)} · {len(milik)} lokasi</div>',
+                        unsafe_allow_html=True)
+            if not milik:
+                st.caption("Belum ada lokasi.")
+            for x in milik:
+                c1, c2, c3 = st.columns([5, 1.8, 1.6], vertical_alignment="center")
+                if st.session_state.get("edit_lokasi") == x["id"]:
+                    e1, e2 = c1.columns([3, 2])
+                    baru = e1.text_input("Nama", value=x["nama"], key=f"nm_lok_{x['id']}",
+                                         label_visibility="collapsed")
+                    awal = x.get("tempat") if x.get("tempat") in pt else ""
+                    tbaru = e2.selectbox("Tempat", ops, index=idx(ops, awal), key=f"tm_lok_{x['id']}",
+                                         format_func=fmt, label_visibility="collapsed")
+                    c3.button("Batal", key=f"bt_lok_{x['id']}", on_click=atur, args=("edit_lokasi", None))
+                    if c2.button("Simpan", key=f"sv_lok_{x['id']}", type="primary"):
+                        baru = baru.strip()
+                        sama = [y["nama"] for y in D["lokasi"]
+                                if y["id"] != x["id"] and (y.get("tempat") or "") == tbaru]
+                        if not baru:
+                            st.error("Nama tidak boleh kosong.")
+                        elif ada_kembar(sama + [baru]):
+                            st.error("Nama itu sudah ada di tempat ini.")
+                        else:
+                            x["nama"] = baru
+                            if tbaru:
+                                x["tempat"] = tbaru
+                            else:
+                                x.pop("tempat", None)
+                            selesai_simpan("Lokasi diubah.", edit_lokasi=None)
+                elif st.session_state.get("hapus_lokasi") == x["id"]:
+                    n_b = sum(1 for b in D["barang"] if b.get("lokasi") == x["id"])
+                    n_s = sum(1 for s in D["sublokasi"] if s["lokasi"] == x["id"])
+                    akibat = ", ".join(([f"{n_b} barang jadi tanpa lokasi"] if n_b else [])
+                                       + ([f"{n_s} sub lokasi ikut terhapus"] if n_s else []))
+                    c1.write(f"Hapus **{x['nama']}**?" + (f" ({akibat})" if akibat else ""))
+                    c3.button("Batal", key=f"bh_lok_{x['id']}", on_click=atur, args=("hapus_lokasi", None))
+                    if c2.button("Ya, hapus", key=f"yh_lok_{x['id']}", type="primary"):
+                        D["lokasi"] = [y for y in D["lokasi"] if y["id"] != x["id"]]
+                        D["sublokasi"] = [y for y in D["sublokasi"] if y["lokasi"] != x["id"]]
+                        selesai_simpan("Dihapus.", hapus_lokasi=None)
+                else:
+                    c1.write(x["nama"])
+                    c2.button("Ubah", key=f"ub_lok_{x['id']}", on_click=atur, args=("edit_lokasi", x["id"]))
+                    c3.button("Hapus", key=f"hp_lok_{x['id']}", on_click=atur, args=("hapus_lokasi", x["id"]))
+        with st.form("tambah_lokasi", clear_on_submit=True):
+            f1, f2 = st.columns([2, 3])
+            tem = f1.selectbox("Di tempat", ops, format_func=fmt)
+            nama = f2.text_input("Nama lokasi", placeholder="Contoh: Lemari kamar")
+            if st.form_submit_button("Tambah lokasi"):
+                nama = nama.strip()
+                sama = [y["nama"] for y in D["lokasi"] if (y.get("tempat") or "") == tem]
+                if not nama:
+                    st.error("Nama tidak boleh kosong.")
+                elif ada_kembar(sama + [nama]):
+                    st.error("Nama itu sudah ada di tempat ini.")
+                else:
+                    baru = {"id": uuid.uuid4().hex[:8], "nama": nama}
+                    if tem:
+                        baru["tempat"] = tem
+                    D["lokasi"].append(baru)
                     selesai_simpan("Ditambahkan.")
 
 
@@ -1683,9 +1815,11 @@ if halaman == "Kedaluwarsa dan garansi":
     halaman_tanggal()
 if halaman == "Nilai barang":
     halaman_nilai()
+if adalah_admin() and halaman == "Tempat":
+    daftar_sederhana("Tempat", "tempat", "Tempat besar yang menyimpan barang, misalnya Rumah A, Rumah B, atau Kantor. "
+                     "Menghapus tempat tidak menghapus lokasinya, hanya melepasnya dari tempat itu.")
 if adalah_admin() and halaman == "Lokasi":
-    daftar_sederhana("Lokasi", "lokasi", "Tempat penyimpanan, misalnya lemari atau kotak. "
-                     "Menghapus lokasi ikut menghapus sub lokasinya. Barangnya tidak terhapus.")
+    halaman_lokasi()
 if adalah_admin() and halaman == "Sub lokasi":
     halaman_sublokasi()
 if adalah_admin() and halaman == "Kategori":
