@@ -34,7 +34,7 @@ st.set_page_config(page_title="Pelacak Barang", page_icon="📦", layout="wide")
 st.markdown("""
 <style>
 .block-container{padding:2.6rem 2rem 4rem;max-width:1600px}
-[data-testid="stToolbar"],[data-testid="stDecoration"],[data-testid="stStatusWidget"]{display:none !important}
+[data-testid="stToolbarActions"],[data-testid="stMainMenu"],[data-testid="stAppDeployButton"],[data-testid="stDecoration"],[data-testid="stStatusWidget"]{display:none !important}
 [data-testid="stHeader"]{background:transparent}
 .eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.09em;color:#2b7a57}
 .judul-hal{font-size:1.6rem;font-weight:700;color:#111827;margin:.1rem 0 .15rem;letter-spacing:-.01em}
@@ -57,8 +57,9 @@ st.markdown("""
 .grup{font-size:.66rem;font-weight:700;letter-spacing:.12em;color:#64748b;margin:1rem 0 .35rem .3rem}
 [data-testid="stSidebar"] [data-testid="stExpander"]{background:transparent;border:0;box-shadow:none;margin-bottom:.2rem}
 [data-testid="stSidebar"] [data-testid="stExpander"] details{border:0}
-[data-testid="stSidebar"] [data-testid="stExpander"] summary{font-weight:600;font-size:.92rem;padding:.55rem .5rem;border-radius:8px}
-[data-testid="stSidebar"] [data-testid="stExpander"] summary:hover{background:rgba(255,255,255,.05)}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary{font-weight:600;font-size:.92rem;padding:.55rem .5rem;border-radius:8px;background:transparent !important;color:#e5e7eb !important}
+[data-testid="stSidebar"] [data-testid="stExpander"] details[open] > summary,[data-testid="stSidebar"] [data-testid="stExpander"] summary:focus,[data-testid="stSidebar"] [data-testid="stExpander"] summary:active{background:transparent !important}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary:hover{background:rgba(255,255,255,.06) !important}
 [data-testid="stSidebar"] [data-testid="stExpanderDetails"]{padding:.1rem 0 .3rem .5rem;border-left:1px solid rgba(255,255,255,.1);margin-left:1rem}
 [class*="st-key-nav_"] button{justify-content:flex-start !important;text-align:left !important;border:0 !important;
   border-radius:8px;min-height:2.4rem;background:transparent !important;color:#cbd5e1 !important;
@@ -100,6 +101,13 @@ st.markdown("""
 .lc-m{background:#fff4d6;color:#8a5a00}.lc-r{background:#fde8e6;color:#b42318}.lc-b{background:#e6eefb;color:#2f5d9e}
 .perhatian{padding:.45rem 0;border-bottom:1px solid #eef0f4;font-size:.92rem;color:#1f2937}
 .perhatian:last-child{border-bottom:0}
+.st-key-menuhp{display:none}
+@media (max-width:768px){
+  .st-key-menuhp{display:block;margin-bottom:.4rem}
+  .block-container{padding:3.4rem 1rem 4rem}
+  .kepala{padding:.9rem 1rem}
+  .judul-hal{font-size:1.35rem}
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -832,6 +840,11 @@ _chip = ""
 if _u:
     _chip = (f'<div class="pengguna"><div class="av">{html.escape(_u["nama"][:1].upper())}</div><div>'
              f'<div class="nm">{html.escape(_u["nama"])}</div><div class="pr">{html.escape(_u["peran"])}</div></div></div>')
+# Pilihan menu cadangan, hanya tampil di layar HP (cadangan kalau tombol sidebar sulit dijangkau)
+with st.container(key="menuhp"):
+    st.session_state.menuhp_pilih = halaman
+    st.selectbox("Pindah menu", HALAMAN, key="menuhp_pilih",
+                 on_change=lambda: atur("halaman", st.session_state.menuhp_pilih))
 st.markdown(f'<div class="kepala"><div><div class="eyebrow">{_grup}</div>'
             f'<div class="judul-hal">{html.escape(halaman)}</div>'
             f'<div class="desk">{html.escape(DESKRIPSI.get(halaman, ""))}</div></div>{_chip}</div>',
