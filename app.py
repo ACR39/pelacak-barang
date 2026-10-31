@@ -643,7 +643,7 @@ def atur(kunci: str, nilai):
 def pindah_halaman(h: str):
     """Ganti menu sekaligus tutup form/konfirmasi yang masih terbuka."""
     st.session_state.halaman = h
-    for k in ("br_mode", "br_hapus", "pj_hapus", "rc_edit", "rc_hapus", "pk_hapus",
+    for k in ("br_mode", "br_hapus", "pj_hapus", "rc_mode", "rc_hapus", "pk_hapus",
               "edit_tempat", "hapus_tempat", "edit_kategori", "hapus_kategori",
               "edit_lokasi", "hapus_lokasi", "edit_sub", "hapus_sub"):
         st.session_state.pop(k, None)
@@ -1640,51 +1640,102 @@ def _hapus_rencana(x):
         n.button("Batal", key=f"rcbt_{x['id']}", on_click=atur, args=("rc_hapus", None))
 
 
+def kartu_rencana_html(x: dict) -> str:
+    """Kartu satu rencana beli: huruf awal, nama + prioritas, keterangan, jumlah besar di kanan."""
+    pri = x.get("prioritas") if x.get("prioritas") in PRIORITAS else "Sedang"
+    jml = int(x.get("jumlah", 1) or 1)
+    harga = int(x.get("harga", 0) or 0)
+    meta = []
+    if harga:
+        meta.append(f"{rp(harga)} per buah")
+        if jml > 1:
+            meta.append(f"total {rp(harga * jml)}")
+    mt = f'<div class="mt">{html.escape(" • ".join(meta))}</div>' if meta else ""
+    cat = f'<div class="cat">{html.escape(x["catatan"])}</div>' if x.get("catatan") else ""
+    ic = html.escape((x["nama"].strip()[:1] or "?").upper())
+    return (f'<div class="itm"><div class="ic">{ic}</div><div class="isi"><div class="jd">{html.escape(x["nama"])}'
+            f'<span class="lencana {LC_PRIORITAS[pri]}">{pri}</span></div>{mt}{cat}</div>'
+            f'<div class="qt"><b>{jml}</b><span>buah</span></div></div>')
+
+
 def halaman_rencana():
     aktif = [x for x in D["rencana"] if not x.get("dibeli")]
     selesai = [x for x in D["rencana"] if x.get("dibeli")]
-    e = next((x for x in aktif if x["id"] == st.session_state.get("rc_edit")), {})
+    mode = st.session_state.get("rc_mode")          # None (daftar), "baru", atau id rencana
+    e = next((x for x in aktif if x["id"] == mode), {})
+    if mode not in (None, "baru") and not e:
+        mode = None
     with st.container(key="kartu_barang"):
-        st.markdown("#### Ubah rencana" if e else "#### Tambah rencana")
-        with st.form(f"form_rc_{e.get('id', 'baru')}_{versi()}"):
-            f1, f2 = st.columns([4, 1])
-            nama = f1.text_input("Nama barang", value=e.get("nama", ""), placeholder="Contoh: Sepatu lari")
-            jml = f2.number_input("Jumlah", min_value=1, value=int(e.get("jumlah", 1) or 1), step=1)
-            g1, g2 = st.columns(2)
-            harga = g1.number_input("Perkiraan harga per buah (Rp)", min_value=0, step=1000,
-                                    value=int(e.get("harga", 0) or 0))
-            pri = g2.selectbox("Prioritas", PRIORITAS, index=idx(PRIORITAS, e.get("prioritas", "Sedang")))
-            catatan = st.text_input("Catatan atau tautan toko (boleh kosong)", value=e.get("catatan", ""))
-            t1, t2, _ = st.columns([1, 1, 3])
-            kirim = t1.form_submit_button("Simpan" if e else "Tambah", type="primary")
-            batal = t2.form_submit_button("Batal") if e else False
-        if batal:
-            st.session_state.rc_edit = None
-            st.rerun()
-        if kirim:
-            nama = nama.strip()
-            if not nama:
-                st.error("Nama barang wajib diisi.")
-            else:
-                isi = {"nama": nama, "jumlah": int(jml), "harga": int(harga), "prioritas": pri,
-                       "catatan": catatan.strip()}
-                if e:
-                    e.update(isi)
+        if mode:
+            st.markdown("#### Ubah rencana" if e else "#### Tambah rencana")
+            with st.form(f"form_rc_{e.get('id', 'baru')}_{versi()}"):
+                f1, f2 = st.columns([4, 1])
+                nama = f1.text_input("Nama barang", value=e.get("nama", ""), placeholder="Contoh: Sepatu lari")
+                jml = f2.number_input("Jumlah", min_value=1, value=int(e.get("jumlah", 1) or 1), step=1)
+                g1, g2 = st.columns(2)
+                harga = g1.number_input("Perkiraan harga per buah (Rp)", min_value=0, step=1000,
+                                        value=int(e.get("harga", 0) or 0))
+                pri = g2.selectbox("Prioritas", PRIORITAS, index=idx(PRIORITAS, e.get("prioritas", "Sedang")))
+                catatan = st.text_input("Catatan atau tautan toko (boleh kosong)", value=e.get("catatan", ""))
+                t1, t2, _ = st.columns([1, 1, 4])
+                kirim = t1.form_submit_button("Simpan", type="primary")
+                kembali = t2.form_submit_button("Kembali")
+            if kembali:
+                st.session_state.rc_mode = None
+                st.rerun()
+            if kirim:
+                nama = nama.strip()
+                if not nama:
+                    st.error("Nama barang wajib diisi.")
                 else:
-                    D["rencana"].append({"id": uuid.uuid4().hex[:8], "dibuat": hari_ini().isoformat(), **isi})
-                selesai_simpan("Rencana disimpan.", rc_edit=None)
+                    isi = {"nama": nama, "jumlah": int(jml), "harga": int(harga), "prioritas": pri,
+                           "catatan": catatan.strip()}
+                    if e:
+                        e.update(isi)
+                    else:
+                        D["rencana"].append({"id": uuid.uuid4().hex[:8], "dibuat": hari_ini().isoformat(), **isi})
+                    selesai_simpan("Rencana disimpan.", rc_mode=None)
+            return
 
-        st.markdown(f"#### Daftar rencana ({len(aktif)})")
+        with st.container(key="baris_cari"):
+            kc, kt = st.columns([5, 2], vertical_alignment="center")
+            cari = " ".join(kc.text_input("Pencarian", key="rc_cari", icon=":material/search:",
+                                          placeholder="Cari nama atau catatan...",
+                                          label_visibility="collapsed").lower().split())
+            kt.button("Tambah", type="primary", key="rc_tambah", icon=":material/add:",
+                      use_container_width=True, on_click=atur, args=("rc_mode", "baru"))
+        mode_tampil = st.segmented_control("Tampilan", ["Kartu", "Tabel"], default="Kartu",
+                                           key="tampilan", label_visibility="collapsed") or "Kartu"
+        urut = sorted(aktif, key=lambda x: (PRIORITAS.index(x["prioritas"]) if x.get("prioritas") in PRIORITAS
+                                            else 1, x["nama"].lower()))
+        if cari:
+            urut = [x for x in urut if cari in " ".join([x["nama"], x.get("catatan", "")]).lower()]
         if not aktif:
-            st.caption("Belum ada rencana pembelian.")
+            st.write("Belum ada rencana pembelian. Tekan Tambah untuk membuat yang pertama.")
+        elif not urut:
+            st.info("Tidak ada rencana yang cocok dengan pencarian.")
         else:
-            urut = sorted(aktif, key=lambda x: (PRIORITAS.index(x["prioritas"]) if x.get("prioritas") in PRIORITAS
-                                                else 1, x["nama"].lower()))
+            st.caption(f"{len(urut)} dari {len(aktif)} rencana")
+        total = sum(int(x.get("harga", 0) or 0) * int(x.get("jumlah", 1) or 1) for x in urut)
+
+        if urut and mode_tampil == "Kartu":
+            for x in urut:
+                with st.container(key=f"item_r_{x['id']}"):
+                    st.markdown(kartu_rencana_html(x), unsafe_allow_html=True)
+                    e1, e2, e3, _ = st.columns([2, 1, 1, 1])
+                    if e1.button("Sudah dibeli", key=f"kpakai_rc_{x['id']}", use_container_width=True):
+                        x["dibeli"] = hari_ini().isoformat()
+                        selesai_simpan("Dicoret dari rencana.")
+                    e2.button("Edit", key=f"kedit_rc_{x['id']}", on_click=atur, args=("rc_mode", x["id"]),
+                              use_container_width=True)
+                    e3.button("Hapus", key=f"khapus_rc_{x['id']}", on_click=atur, args=("rc_hapus", x["id"]),
+                              use_container_width=True)
+                    _hapus_rencana(x)
+        elif urut:
             lebar = [4.6, 1.2, 2.6, 3.6]
             kep = st.columns(lebar, vertical_alignment="top")
             for kol, judul in zip(kep, ["Barang", "Jml", "Perkiraan", "Aksi"]):
                 kol.markdown(f'<div class="thead-s">{judul}</div>', unsafe_allow_html=True)
-            total = 0
             for x in urut:
                 st.markdown('<div class="garis"></div>', unsafe_allow_html=True)
                 k = st.columns(lebar, vertical_alignment="center")
@@ -1695,15 +1746,15 @@ def halaman_rencana():
                               unsafe_allow_html=True)
                 k[1].write(int(x.get("jumlah", 1) or 1))
                 est = int(x.get("harga", 0) or 0) * int(x.get("jumlah", 1) or 1)
-                total += est
                 k[2].write(rp(est) if est else "—")
                 a1, a2, a3 = k[3].columns([4, 1.2, 1.2])
                 if a1.button("Sudah dibeli", key=f"rcbeli_{x['id']}"):
                     x["dibeli"] = hari_ini().isoformat()
                     selesai_simpan("Dicoret dari rencana.")
-                a2.button("✏️", key=f"rcedit_{x['id']}", help="Ubah", on_click=atur, args=("rc_edit", x["id"]))
+                a2.button("✏️", key=f"rcedit_{x['id']}", help="Ubah", on_click=atur, args=("rc_mode", x["id"]))
                 a3.button("🗑️", key=f"rchapus_{x['id']}", help="Hapus", on_click=atur, args=("rc_hapus", x["id"]))
                 _hapus_rencana(x)
+        if urut:
             st.caption(f"Perkiraan total: {rp(total)}")
             teks = "\n".join(f"- {x['nama']} x{int(x.get('jumlah', 1) or 1)} ({x.get('prioritas', 'Sedang')})"
                              for x in urut)
