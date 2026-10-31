@@ -100,7 +100,7 @@ st.markdown("""
 .garis{border-top:1px solid #e3e7ee;margin:.3rem 0}
 .brg{font-weight:650}
 .sub{font-size:.85rem;color:#5b6573}
-.bidang{font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:#256b4a;background:#e8f3ec;border-left:3px solid #256b4a;padding:.35rem .7rem;border-radius:4px;margin:1rem 0 .4rem}
+.bidang{font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:#256b4a;background:#e8f3ec;border-left:3px solid #256b4a;padding:.35rem .7rem;border-radius:4px;margin:.4rem 0 -.3rem}
 .st-ok{color:#166534;font-weight:600}.st-warn{color:#8a5a00;font-weight:600}.st-bad{color:#b42318;font-weight:600}
 .lencana{display:inline-block;font-size:.66rem;font-weight:700;border-radius:999px;padding:.05rem .5rem;margin-left:.4rem;vertical-align:middle}
 .lc-m{background:#fff4d6;color:#8a5a00}.lc-r{background:#fde8e6;color:#b42318}.lc-b{background:#e6eefb;color:#2f5d9e}
@@ -109,7 +109,8 @@ st.markdown("""
 .perhatian{padding:.45rem 0;border-bottom:1px solid #eef0f4;font-size:.92rem;color:#1f2937}
 .perhatian:last-child{border-bottom:0}
 @media (max-width:768px){
-  .block-container{padding:3rem 1rem 4rem}
+  .block-container{padding:2.4rem 1rem 4rem}
+  [data-testid="stHeader"]{height:2.4rem;min-height:0}
   .kepala{padding:.9rem 1rem}
   .judul-hal{font-size:1.35rem}
 }
@@ -124,7 +125,17 @@ st.markdown("""
 }
 /* Tampilan kartu barang */
 [class*="st-key-item_"]{background:#fff;border:1px solid #e3e7ee;border-radius:14px;padding:.8rem 1rem;
-  box-shadow:0 1px 3px rgba(16,24,40,.06);margin-bottom:.6rem;color:#111827 !important}
+  box-shadow:0 1px 3px rgba(16,24,40,.06);margin-bottom:-.35rem;color:#111827 !important;gap:.45rem !important}
+[class*="st-key-item_"] [data-testid="stMarkdown"],[class*="st-key-item_"] [data-testid="stMarkdownContainer"]{margin-bottom:0 !important}
+@media (max-width:640px){
+  [class*="st-key-item_"]{padding:.7rem .85rem}
+  .itm{gap:.7rem}
+  .itm .ic{flex-basis:44px;width:44px;height:44px;font-size:1.1rem}
+  .itm .jd{font-size:.98rem;line-height:1.25}
+  .itm .mt,.itm .cat{font-size:.78rem;line-height:1.35}
+  .itm .qt{min-width:40px}
+  .itm .qt b{font-size:1.45rem}
+}
 .itm{display:flex;align-items:center;gap:.85rem}
 .itm .ic{flex:0 0 52px;width:52px;height:52px;border-radius:50%;background:#e8f3ec;color:#256b4a;font-weight:800;
   font-size:1.25rem;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -852,11 +863,13 @@ def kumpul_perhatian():
         g = sisa_hari(b.get("garansi"))
         if g is not None and 0 <= g <= 30:
             gar_dekat.append(b["nama"])
-    telat = []
+    telat, tgt_hari = [], []
     for p in D["pinjam"]:
         s = sisa_hari(p.get("tenggat"))
         if not p.get("kembali") and s is not None and s < 0:
             telat.append(f"{p.get('nama', '')} ({p.get('orang', '')})")
+        elif not p.get("kembali") and s == 0:
+            tgt_hari.append(f"{p.get('nama', '')} ({p.get('orang', '')})")
     beli = [b["nama"] for b in D["barang"] if perlu_beli(b)]
     hasil = []
     if exp_lewat:
@@ -865,6 +878,8 @@ def kumpul_perhatian():
         hasil.append(f"⏰ <b>Kedaluwarsa dalam 30 hari:</b> {daftar(exp_dekat)}")
     if gar_dekat:
         hasil.append(f"🛡️ <b>Garansi berakhir dalam 30 hari:</b> {daftar(gar_dekat)}")
+    if tgt_hari:
+        hasil.append(f"🔔 <b>Tenggat pengembalian hari ini:</b> {daftar(tgt_hari)}")
     if telat:
         hasil.append(f"🔁 <b>Pinjaman lewat tenggat:</b> {daftar(telat)}")
     if beli:
@@ -956,6 +971,26 @@ st.markdown(f'<div class="kepala"><div><div class="eyebrow">{_grup}</div>'
             unsafe_allow_html=True)
 
 # -------------------------------------------------------------------- beranda
+def pesan_tenggat() -> list:
+    """Peminjaman yang tenggat pengembaliannya jatuh hari ini dan belum dikembalikan."""
+    hasil = []
+    for p in D["pinjam"]:
+        if p.get("kembali") or sisa_hari(p.get("tenggat")) != 0:
+            continue
+        if p.get("arah") == "keluar":
+            hasil.append(f"{p.get('orang', '')} perlu mengembalikan {p.get('nama', '')} hari ini")
+        else:
+            hasil.append(f"Kembalikan {p.get('nama', '')} ke {p.get('orang', '')} hari ini")
+    return hasil
+
+
+_tenggat = pesan_tenggat()
+if _tenggat and halaman in ("Beranda", "Pinjam-meminjam"):
+    st.warning("🔔 **Tenggat pengembalian hari ini**\n\n" + "\n".join(f"- {t}" for t in _tenggat))
+if _tenggat and not st.session_state.get("toast_tenggat"):
+    st.session_state.toast_tenggat = True
+    st.toast(f"{len(_tenggat)} peminjaman jatuh tempo hari ini", icon="🔔")
+
 if halaman == "Beranda":
     brg = D["barang"]
     if not brg:
@@ -988,6 +1023,21 @@ if halaman == "Beranda":
             else:
                 st.caption("Tidak ada yang perlu diperhatikan sekarang.")
 
+        with st.container(key="kartu_tgl_pinjam"):
+            st.markdown("**Sedang dipinjam**")
+            aktif_p = sorted([p for p in D["pinjam"] if not p.get("kembali")],
+                             key=lambda x: (x.get("tenggat") or "9999-12-31", x.get("tanggal", "")))
+            if not aktif_p:
+                st.caption("Tidak ada barang yang sedang dipinjam.")
+            for p in aktif_p:
+                tanda = ('<span class="lencana lc-m">Dipinjamkan</span>' if p.get("arah") == "keluar"
+                         else '<span class="lencana lc-b">Saya pinjam</span>')
+                tgt = (f' · Tenggat {fmt_iso(p["tenggat"])} {status_sisa(sisa_hari(p["tenggat"]))}'
+                       if p.get("tenggat") else "")
+                st.markdown(f'<div class="perhatian"><div class="brg">{html.escape(p.get("nama", ""))}{tanda}</div>'
+                            f'<div class="sub">{html.escape(p.get("orang", ""))} · sejak '
+                            f'{fmt_iso(p.get("tanggal", ""))}{tgt}</div></div>', unsafe_allow_html=True)
+
         g1, g2 = st.columns(2)
         with g1.container(key="kartu_g1"):
             st.markdown("**Jenis barang per lokasi**")
@@ -1006,14 +1056,6 @@ if halaman == "Beranda":
                          x="Kategori", y="Jenis barang", horizontal=True, sort="-Jenis barang",
                          color="#2f5d9e", height=300)
 
-        with st.container(key="kartu_tabel"):
-            st.markdown("**Terakhir diubah**")
-            for b in sorted(brg, key=lambda x: x.get("diubah", ""), reverse=True)[:8]:
-                k = st.columns([4, 4, 2], vertical_alignment="center")
-                k[0].markdown(f'<div class="brg">{html.escape(b["nama"])}</div>', unsafe_allow_html=True)
-                k[1].write(nama_tempat(b))
-                k[2].write(fmt_iso(b.get("diubah", "")))
-                st.markdown('<div class="garis"></div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------- cari barang
 if halaman == "Cari barang":
