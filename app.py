@@ -120,6 +120,29 @@ st.markdown("""
   [data-testid="stHorizontalBlock"]:has(.brg) [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]{min-width:0 !important;width:auto !important}
   .st-key-kartu_tabel .garis,.st-key-kartu_barang .garis,[class*="st-key-kartu_tgl"] .garis{min-width:780px}
 }
+/* Tampilan kartu barang */
+[class*="st-key-item_"]{background:#fff;border:1px solid #e3e7ee;border-radius:14px;padding:.8rem 1rem;
+  box-shadow:0 1px 3px rgba(16,24,40,.06);margin-bottom:.6rem;color:#111827 !important}
+.itm{display:flex;align-items:center;gap:.85rem}
+.itm .ic{flex:0 0 52px;width:52px;height:52px;border-radius:50%;background:#e8f3ec;color:#256b4a;font-weight:800;
+  font-size:1.25rem;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.itm .ic img{width:100%;height:100%;object-fit:cover}
+.itm .isi{flex:1 1 auto;min-width:0}
+.itm .jd{font-weight:700;font-size:1.02rem;color:#111827;word-break:break-word}
+.itm .mt{font-size:.82rem;color:#5b6573;margin-top:.1rem;word-break:break-word}
+.itm .cat{font-size:.82rem;color:#374151;margin-top:.15rem;word-break:break-word}
+.itm .qt{flex:0 0 auto;text-align:right;min-width:48px}
+.itm .qt b{display:block;font-size:1.7rem;font-weight:800;line-height:1.1;color:#111827}
+.itm .qt b.merah{color:#b42318}
+.itm .qt span{font-size:.72rem;color:#6b7280}
+[class*="st-key-kedit_"] button,[class*="st-key-khapus_"] button{min-height:2rem;padding:.1rem .9rem;background:#fff !important;font-weight:600}
+[class*="st-key-kedit_"] button{border:1px solid #256b4a !important;color:#256b4a !important}
+[class*="st-key-khapus_"] button{border:1px solid #b42318 !important;color:#b42318 !important}
+.st-key-baris_cari [data-testid="stHorizontalBlock"],[class*="st-key-item_"] [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important;align-items:center}
+.st-key-baris_cari [data-testid="stColumn"]:first-child{min-width:0 !important;flex:1 1 auto !important;width:auto !important}
+.st-key-baris_cari [data-testid="stColumn"]:last-child,[class*="st-key-item_"] [data-testid="stColumn"]{min-width:0 !important;flex:0 0 auto !important;width:auto !important}
+.st-key-baris_cari button,[class*="st-key-item_"] button{white-space:nowrap}
+.st-key-baris_cari button p,[class*="st-key-item_"] button p{white-space:nowrap}
 </style>
 """, unsafe_allow_html=True)
 
@@ -758,6 +781,48 @@ def tampil_foto_kecil(b: dict, kolom):
         kolom.write("")
 
 
+@st.cache_data(show_spinner=False, max_entries=300)
+def _uri_bulat(path: str, dat: bytes) -> str:
+    from PIL import Image, ImageOps
+    im = ImageOps.exif_transpose(Image.open(io.BytesIO(dat))).convert("RGB")
+    im = ImageOps.fit(im, (104, 104))
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", quality=80)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+def kartu_barang_html(b: dict, foto: bool = True) -> str:
+    """Satu kartu barang: ikon/foto bulat, nama, keterangan, jumlah besar di kanan."""
+    ic = html.escape((b["nama"].strip()[:1] or "?").upper())
+    if foto and b.get("foto"):
+        dat = ambil_foto(b["foto"])
+        if dat:
+            try:
+                ic = f'<img src="{_uri_bulat(b["foto"], dat)}" alt="">'
+            except Exception:
+                pass
+    meta = [nama_tempat(b)]
+    if b.get("kategori"):
+        meta.append(nama_kat(b))
+    if harga_b(b):
+        meta.append("Rp " + f"{harga_b(b):,}".replace(",", "."))
+    ekstra = []
+    for lab, kunci in (("Kedaluwarsa", "kedaluwarsa"), ("Garansi", "garansi")):
+        s = sisa_hari(b.get(kunci))
+        if s is not None:
+            ekstra.append(f"{lab}: {status_sisa(s)}")
+    cat = ""
+    if b.get("catatan"):
+        cat += f'<div class="cat">{html.escape(b["catatan"])}</div>'
+    if ekstra:
+        cat += f'<div class="cat">{" · ".join(ekstra)}</div>'
+    merah = " merah" if perlu_beli(b) else ""
+    return (f'<div class="itm"><div class="ic">{ic}</div><div class="isi">'
+            f'<div class="jd">{html.escape(b["nama"])}{lencana(b)}</div>'
+            f'<div class="mt">{html.escape(" • ".join(meta))}</div>{cat}</div>'
+            f'<div class="qt"><b class="{merah.strip()}">{jumlah_b(b)}</b><span>buah</span></div></div>')
+
+
 def kumpul_perhatian():
     """Daftar hal yang perlu diperhatikan: (kelas, teks html)."""
     def daftar(nama_nama, maks=5):
@@ -975,7 +1040,10 @@ if halaman == "Cari barang":
                 st.session_state.cari_kat = "semua"
             f_kat = c3.selectbox("Kategori", ["semua"] + list(pk), key="cari_kat",
                                  format_func=lambda i: "Semua kategori" if i == "semua" else pk[i])
-            tampil_foto = st.toggle("Tampilkan foto", value=True, key="cari_foto")
+            tv1, tv2 = st.columns([2, 3], vertical_alignment="center")
+            mode_tampil = tv1.segmented_control("Tampilan", ["Kartu", "Tabel"], default="Kartu",
+                                                key="tampilan", label_visibility="collapsed") or "Kartu"
+            tampil_foto = tv2.toggle("Tampilkan foto", value=True, key="cari_foto")
         hasil = D["barang"]
         if f_tem != "semua":
             hasil = [b for b in hasil if (lokasi_dari(b) or {}).get("tempat") == f_tem]
@@ -991,6 +1059,12 @@ if halaman == "Cari barang":
         st.caption(f"{len(hasil)} dari {len(D['barang'])} barang")
         if not hasil:
             st.info("Tidak ada barang yang cocok.")
+        elif mode_tampil == "Kartu":
+            for judul, anggota in kelompok(hasil):
+                judul_grup(judul, len(anggota))
+                for b in sorted(anggota, key=lambda x: x["nama"].lower()):
+                    with st.container(key=f"item_c_{b['id']}"):
+                        st.markdown(kartu_barang_html(b, tampil_foto), unsafe_allow_html=True)
         else:
             with st.container(key="kartu_tabel"):
                 lebar = [4, 1.2, 2.4, 4, 2]
@@ -1025,12 +1099,43 @@ def halaman_barang():
         mode = None
     with st.container(key="kartu_barang"):
         if not mode:
-            st.button("Tambah barang", type="primary", key="br_tambah", on_click=atur, args=("br_mode", "baru"))
+            with st.container(key="baris_cari"):
+                kc, kt = st.columns([5, 2], vertical_alignment="center")
+                cari = " ".join(kc.text_input("Pencarian", key="br_cari", icon=":material/search:",
+                                              placeholder="Cari nama, lokasi, atau kategori...",
+                                              label_visibility="collapsed").lower().split())
+                kt.button("Tambah", type="primary", key="br_tambah", icon=":material/add:",
+                          use_container_width=True, on_click=atur, args=("br_mode", "baru"))
+            mode_tampil = st.segmented_control("Tampilan", ["Kartu", "Tabel"], default="Kartu",
+                                               key="tampilan", label_visibility="collapsed") or "Kartu"
             if not D["barang"]:
                 st.write("Belum ada barang.")
-            cari = " ".join(st.text_input("Pencarian", key="br_cari", icon=":material/search:",
-                                          placeholder="Cari nama, lokasi, atau kategori...",
-                                          label_visibility="collapsed").lower().split())
+            if mode_tampil == "Kartu":
+                urut = sorted(D["barang"], key=lambda x: x["nama"].lower())
+                if cari:
+                    urut = [x for x in urut if cari in " ".join(
+                        [x["nama"], x.get("catatan", ""), nama_tempat(x), nama_kat(x)]).lower()]
+                    if not urut:
+                        st.info("Tidak ada barang yang cocok dengan pencarian.")
+                for b in urut:
+                    with st.container(key=f"item_k_{b['id']}"):
+                        st.markdown(kartu_barang_html(b), unsafe_allow_html=True)
+                        e1, e2, _ = st.columns([1, 1, 3])
+                        e1.button("Edit", key=f"kedit_{b['id']}", on_click=atur, args=("br_mode", b["id"]),
+                                  use_container_width=True)
+                        e2.button("Hapus", key=f"khapus_{b['id']}", on_click=atur, args=("br_hapus", b["id"]),
+                                  use_container_width=True)
+                        if st.session_state.get("br_hapus") == b["id"]:
+                            st.warning(f"Hapus {b['nama']}?")
+                            y, n, _ = st.columns([1, 1, 2])
+                            if y.button("Ya, hapus", type="primary", key=f"brya_{b['id']}"):
+                                foto_lama = b.get("foto", "")
+                                D["barang"] = [x for x in D["barang"] if x["id"] != b["id"]]
+                                selesai_simpan("Dihapus.",
+                                               sesudah=(lambda p=foto_lama: hapus_foto(p)) if foto_lama else None,
+                                               br_hapus=None)
+                            n.button("Batal", key=f"brbatal_{b['id']}", on_click=atur, args=("br_hapus", None))
+                return
             lebar = [0.8, 4, 3.4, 2.2, 1, 1.7]
             kep = st.columns(lebar)
             for kol, judul in zip(kep, ["No.", "Barang", "Lokasi", "Kategori", "Jml", "#"]):
@@ -1113,6 +1218,9 @@ def halaman_barang():
                     st.image(dat, width=140)
             upl = st.file_uploader("Foto barang (boleh kosong)", type=["jpg", "jpeg", "png", "webp"],
                                    help="Foto dikecilkan otomatis supaya hemat tempat.")
+            with st.expander("Atau ambil foto dengan kamera"):
+                kam = st.camera_input("Kamera", label_visibility="collapsed",
+                                      help="Izinkan akses kamera di peramban. Kalau ada foto dari kamera, itu yang dipakai.")
             hapus_cb = st.checkbox("Hapus foto yang sekarang") if foto_lama else False
             catatan = st.text_area("Catatan", value=b.get("catatan", ""))
             t1, t2, _ = st.columns([1, 1, 4])
@@ -1130,9 +1238,10 @@ def halaman_barang():
                 else:
                     id_ = b.get("id") or uuid.uuid4().hex[:8]
                     foto_baru, galat = "", ""
-                    if upl is not None:
+                    sumber = kam if kam is not None else upl
+                    if sumber is not None:
                         try:
-                            foto_baru = simpan_foto(id_, upl.getvalue())
+                            foto_baru = simpan_foto(id_, sumber.getvalue())
                         except Exception as e:
                             galat = f"Foto gagal diunggah: {e}"
                     if galat:

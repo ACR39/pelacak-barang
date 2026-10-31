@@ -1,29 +1,36 @@
 # Pelacak Barang Pribadi
 
-Aplikasi Streamlit untuk mencatat di mana barang pribadi disimpan, lengkap dengan pantauan pinjaman, belanja, kedaluwarsa, dan nilai barang. Tampilannya mengikuti aplikasi Rekap Isian Pekerja.
+Aplikasi Streamlit untuk mencatat di mana barang pribadi disimpan. Data tersimpan di repo GitHub privat, jadi tidak hilang saat aplikasi restart.
 
 ## Menu
 
+**Beranda**: ringkasan, daftar hal yang perlu perhatian (kedaluwarsa, garansi, pinjaman lewat tenggat, perlu beli), grafik.
+
 **Barang**
-- **Cari barang**: cari nama, lokasi, kategori, catatan; filter lokasi, sub lokasi, kategori; tombol Lihat untuk detail dan foto
-- **Kelola barang**: tambah, ubah, hapus, termasuk foto, harga, kedaluwarsa, garansi, dan penanda perlu dibeli
-- **Pindah massal**: pindahkan banyak barang sekaligus ke lokasi baru
-- **Riwayat perpindahan**: tercatat otomatis saat barang ditambah, dipindah, atau dihapus
+- **Cari barang**: cari nama, lokasi, kategori, catatan. Filter tempat, lokasi, sub lokasi, kategori. Tampilan **Kartu** (foto bulat, jumlah besar di kanan) atau **Tabel**, dengan penanda "Perlu beli" atau "Dipinjam".
+- **Kelola barang**: tambah, ubah, hapus (tampilan Kartu atau Tabel). Isian: lokasi, sub lokasi, kategori, jumlah, harga beli, tanggal kedaluwarsa, garansi, tanda habis, foto, catatan.
+- **Pindah massal**: pilih banyak barang, pindahkan sekaligus ke lokasi lain.
+- **Riwayat perpindahan**: tercatat otomatis (dari mana ke mana, kapan, oleh siapa).
 
-**Pantauan**
-- **Pinjam-meminjam**: barang yang kamu pinjamkan atau pinjam, jatuh tempo, tombol "Sudah kembali"
-- **Daftar belanja**: barang yang ditandai perlu dibeli atau jumlahnya 0, bisa diunduh sebagai teks
-- **Kedaluwarsa dan garansi**: daftar yang akan atau sudah lewat tanggalnya
-- **Nilai barang**: total nilai (harga x jumlah) per lokasi dan kategori
+**Pantau**
+- **Pinjam-meminjam**: barang yang kamu pinjamkan atau yang kamu pinjam, tenggat, tombol "Sudah kembali".
+- **Perlu beli**: barang bertanda habis atau berjumlah nol, jadi daftar belanja yang bisa diunduh.
+- **Kedaluwarsa dan garansi**: urut dari yang paling dekat, dengan filter 30 dan 90 hari.
+- **Nilai barang**: total nilai (harga x jumlah), per lokasi dan kategori.
 
-**Master data** (admin): Lokasi, Sub lokasi, Kategori, Label QR, Cadangan dan pindah data
+**Master data** (admin): Tempat, Lokasi, Sub lokasi, Kategori, **Label QR**, Cadangan dan pindah data.
 
-Contoh: lokasi "Lemari kamar", sub lokasi "Kotak 2", barang "Parfum".
+## Label QR
+
+1. Buat lokasi dan sub lokasi dulu.
+2. Buka Master data > Label QR, isi alamat aplikasi (atau simpan di Secrets sebagai `app_url`).
+3. Unduh lembar label, buka di peramban, cetak (Ctrl+P), tempel di lemari atau kotak.
+4. Pindai dengan kamera HP: aplikasi terbuka (setelah login) langsung ke daftar isi tempat itu.
 
 ## Pasang
 
 1. Buat repo untuk kode (isi `app.py`, `requirements.txt`, `README.md`, `buat_hash.py`).
-2. Buat repo **privat** terpisah untuk data, mis. `data-barang`. Isi README saja. `data.json` dan folder `fotos/` dibuat otomatis.
+2. Buat repo **privat** terpisah untuk data, mis. `data-barang`. Isi README saja. `data.json` dan folder `foto/` dibuat otomatis.
 3. Buat token GitHub (fine-grained) dengan akses ke repo data saja, izin **Contents: Read and write**.
 4. Deploy di share.streamlit.io, file utama `app.py`.
 5. Isi Secrets (App > Settings > Secrets):
@@ -31,8 +38,7 @@ Contoh: lokasi "Lemari kamar", sub lokasi "Kotak 2", barang "Parfum".
 ```toml
 sesi_jam = 8
 sesi_kunci = "isi-teks-acak-panjang"
-app_url = "https://namaapp.streamlit.app"   # untuk label QR
-zona_jam = 8                                # selisih jam dari UTC (WIB 7, WITA 8, WIT 9)
+app_url = "https://namaapp.streamlit.app"
 
 [github]
 token = "github_pat_xxx"
@@ -46,13 +52,16 @@ peran = "admin"
 password_hash = "pbkdf2$..."
 ```
 
-Buat `password_hash` dengan `python buat_hash.py`, lalu tempel hasilnya.
+Buat `password_hash` dengan `python buat_hash.py`, lalu tempel hasilnya. `app_url` boleh diisi belakangan setelah alamat aplikasi diketahui.
 
 Tanpa bagian `[users]`, aplikasi memakai kata sandi tunggal dari secret `password = "..."`. Tanpa keduanya, aplikasi terbuka tanpa login (hanya untuk uji coba).
 
-## Label QR
+## Catatan
 
-Menu Master data > Label QR membuat kode QR untuk tiap lokasi dan sub lokasi. Unduh lembar label (HTML), cetak, lalu tempel di kotak atau lemari. Saat dipindai, aplikasi terbuka dan langsung menampilkan isi lokasi itu (perlu login).
+- Foto dikecilkan otomatis (maks 900 px, JPEG) dan disimpan di folder `foto/` pada repo data. Cadangan `data.json` tidak memuat foto.
+- Waktu pencatatan memakai WIB.
+- Riwayat perpindahan menyimpan maksimal 1000 catatan terakhir.
+- Data lama tetap terbaca: kolom baru (harga, kedaluwarsa, garansi, foto, pinjam, riwayat) kosong sampai diisi.
 
 ## Jalankan lokal
 
@@ -61,8 +70,4 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Tanpa secrets, data disimpan ke `data_lokal.json` dan foto ke folder `fotos_lokal/`.
-
-## Pindah dari versi lama
-
-Kalau sudah punya `items.json` dari versi pertama, buka Master data > Cadangan dan pindah data lalu muat filenya. Formatnya otomatis diubah.
+Tanpa secrets, data disimpan ke `data_lokal.json` dan foto ke folder `foto_lokal/`.
