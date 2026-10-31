@@ -1145,9 +1145,9 @@ def halaman_barang():
                                                br_hapus=None)
                             n.button("Batal", key=f"brbatal_{b['id']}", on_click=atur, args=("br_hapus", None))
                 return
-            lebar = [0.8, 4, 3.4, 2.2, 1, 1.7]
+            lebar = [0.8, 1.2, 4, 3.4, 2.2, 1, 1.7]
             kep = st.columns(lebar)
-            for kol, judul in zip(kep, ["No.", "Barang", "Lokasi", "Kategori", "Jml", "#"]):
+            for kol, judul in zip(kep, ["No.", "Foto", "Barang", "Lokasi", "Kategori", "Jml", "#"]):
                 kol.markdown(f'<div class="thead-s">{judul}</div>', unsafe_allow_html=True)
             urut = sorted(D["barang"], key=lambda x: x["nama"].lower())
             if cari:
@@ -1159,12 +1159,13 @@ def halaman_barang():
                 st.markdown('<div class="garis"></div>', unsafe_allow_html=True)
                 k = st.columns(lebar, vertical_alignment="center")
                 k[0].write(f"{no}.")
-                k[1].markdown(f'<div class="brg">{html.escape(b["nama"])}{" 📷" if b.get("foto") else ""}'
-                              f'{lencana(b)}</div>', unsafe_allow_html=True)
-                k[2].write(nama_tempat(b))
-                k[3].write(nama_kat(b) if b.get("kategori") else "")
-                k[4].write(b.get("jumlah", 1))
-                t1, t2 = k[5].columns(2)
+                tampil_foto_kecil(b, k[1])
+                k[2].markdown(f'<div class="brg">{html.escape(b["nama"])}{lencana(b)}</div>',
+                              unsafe_allow_html=True)
+                k[3].write(nama_tempat(b))
+                k[4].write(nama_kat(b) if b.get("kategori") else "")
+                k[5].write(b.get("jumlah", 1))
+                t1, t2 = k[6].columns(2)
                 t1.button("✏️", key=f"bredit_{b['id']}", help="Ubah", on_click=atur, args=("br_mode", b["id"]))
                 t2.button("🗑️", key=f"brhapus_{b['id']}", help="Hapus", on_click=atur, args=("br_hapus", b["id"]))
                 if st.session_state.get("br_hapus") == b["id"]:
