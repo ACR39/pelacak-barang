@@ -47,10 +47,12 @@ st.markdown("""
   color:#fff;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center}
 .pengguna .nm{font-size:.84rem;font-weight:600;color:#0f172a;line-height:1.15}
 .pengguna .pr{font-size:.7rem;color:#64748b;text-transform:capitalize}
-.pengguna.sb{background:rgba(255,255,255,.07);margin:.2rem 0 .6rem;border-radius:12px;padding:.5rem .7rem .5rem .5rem}
+.pengguna.sb{background:transparent;margin:.9rem 0 .5rem;border-radius:0;border-top:1px solid rgba(255,255,255,.08);padding:.9rem .2rem 0}
 [data-testid="stSidebar"] .pengguna.sb .nm{color:#fff;font-size:.88rem}
 [data-testid="stSidebar"] .pengguna.sb .pr{color:#94a3b8}
 [data-testid="stSidebar"]{background:#0b1220}
+[data-testid="stSidebarHeader"]{position:absolute;top:.5rem;right:.5rem;width:auto;height:auto;padding:0;margin:0;z-index:5}
+[data-testid="stSidebarUserContent"]{padding-top:1.1rem}
 [data-testid="stSidebar"] *{color:#e5e7eb}
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"] *{color:#94a3b8}
 .brand{display:flex;align-items:center;gap:.7rem;padding:.3rem .2rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:.4rem}
@@ -897,12 +899,6 @@ LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.or
 with st.sidebar:
     st.markdown(f'<div class="brand">{LOGO}<div><div class="b1">Pelacak Barang</div>'
                 '<div class="b2">Di mana barangku?</div></div></div>', unsafe_allow_html=True)
-    _us = st.session_state.get("user")
-    if _us:
-        st.markdown(f'<div class="pengguna sb"><div class="av">{html.escape(_us["nama"][:1].upper())}</div><div>'
-                    f'<div class="nm">{html.escape(_us["nama"])}</div>'
-                    f'<div class="pr">{html.escape(_us["peran"])}</div></div></div>', unsafe_allow_html=True)
-
     def tombol_nav(h):
         st.button(h, key=f"nav_{h}", use_container_width=True, icon=f":material/{IKON[h]}:",
                   type="primary" if h == halaman else "secondary", on_click=pindah_halaman, args=(h,))
@@ -927,9 +923,11 @@ with st.sidebar:
         st.rerun()
     if cfg_github():
         st.caption(f"Data: {cfg_github()['repo']}")
-    if st.session_state.get("user"):
-        u = st.session_state.user
-        st.markdown('<div class="sp"></div>', unsafe_allow_html=True)
+    _us = st.session_state.get("user")
+    if _us:
+        st.markdown(f'<div class="pengguna sb"><div class="av">{html.escape(_us["nama"][:1].upper())}</div><div>'
+                    f'<div class="nm">{html.escape(_us["nama"])}</div>'
+                    f'<div class="pr">{html.escape(_us["peran"])}</div></div></div>', unsafe_allow_html=True)
         st.button("Keluar", key="nav_keluar", use_container_width=True,
                   icon=":material/logout:", on_click=keluar)
 
