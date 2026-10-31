@@ -33,7 +33,7 @@ st.set_page_config(page_title="Pelacak Barang", page_icon="📦", layout="wide")
 
 st.markdown("""
 <style>
-.block-container{padding:2.6rem 2rem 4rem;max-width:1600px}
+.block-container{padding:1rem 2rem 4rem;max-width:1600px}
 [data-testid="stToolbarActions"],[data-testid="stMainMenu"],[data-testid="stAppDeployButton"],[data-testid="stDecoration"],[data-testid="stStatusWidget"]{display:none !important}
 [data-testid="stHeader"]{background:transparent}
 .eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.09em;color:#2b7a57}
@@ -107,7 +107,7 @@ st.markdown("""
 .perhatian{padding:.45rem 0;border-bottom:1px solid #eef0f4;font-size:.92rem;color:#1f2937}
 .perhatian:last-child{border-bottom:0}
 @media (max-width:768px){
-  .block-container{padding:3.4rem 1rem 4rem}
+  .block-container{padding:3rem 1rem 4rem}
   .kepala{padding:.9rem 1rem}
   .judul-hal{font-size:1.35rem}
 }
@@ -917,7 +917,7 @@ with st.sidebar:
         for h in PANTAU:
             tombol_nav(h)
     if adalah_admin():
-        with st.expander("Master data", icon=":material/database:", expanded=halaman in MASTER):
+        with st.expander("Pengaturan", icon=":material/settings:", expanded=halaman in MASTER):
             for h in MASTER:
                 tombol_nav(h)
     st.markdown('<div class="sp"></div>', unsafe_allow_html=True)
@@ -950,7 +950,7 @@ DESKRIPSI = {
     "Label QR": "Cetak label QR untuk ditempel di lemari atau kotak. Dipindai, langsung muncul isinya.",
     "Cadangan dan pindah data": "Unduh cadangan data atau muat data dari berkas.",
 }
-_grup = ("MASTER" if halaman in MASTER else "RINGKASAN" if halaman == "Beranda"
+_grup = ("PENGATURAN" if halaman in MASTER else "RINGKASAN" if halaman == "Beranda"
          else "PANTAU" if halaman in PANTAU else "BARANG")
 st.markdown(f'<div class="kepala"><div><div class="eyebrow">{_grup}</div>'
             f'<div class="judul-hal">{html.escape(halaman)}</div>'
@@ -1188,14 +1188,28 @@ def halaman_barang():
             if adalah_admin():
                 c1.button("Buka menu Lokasi", on_click=lambda: st.session_state.update(halaman="Lokasi"))
             else:
-                st.caption("Minta admin menambahkan lokasi di Master data.")
+                st.caption("Minta admin menambahkan lokasi di Pengaturan.")
             c2.button("Kembali", on_click=atur, args=("br_mode", None))
+            return
+        # Pilihan tempat ada di luar form supaya daftar lokasi di bawahnya langsung ikut berubah.
+        f_tem = ""
+        if D["tempat"]:
+            ptem = {t["id"]: t["nama"] for t in sorted(D["tempat"], key=lambda t: t["nama"].lower())}
+            ops_t = [""] + list(ptem)
+            awal_t = (tempat_dari_lok(lokasi_dari(b)) or {}).get("id", "") if lokasi_dari(b) else ""
+            f_tem = st.selectbox("Tempat", ops_t, index=idx(ops_t, awal_t), key=f"br_tempat_{mode}_{versi()}",
+                                 format_func=lambda i: "Semua tempat" if not i else ptem[i],
+                                 help="Pilih tempat dulu supaya daftar lokasi di bawah hanya menampilkan isi tempat itu.")
+        pl = {l["id"]: (l["nama"] if f_tem else nama_lok(l)) for l in daftar_lokasi()
+              if not f_tem or l.get("tempat") == f_tem}
+        if not pl:
+            st.info("Tempat ini belum punya lokasi. Pilih tempat lain, atau tambahkan lokasinya di Pengaturan > Lokasi.")
+            st.button("Kembali", key="br_kembali_kosong", on_click=atur, args=("br_mode", None))
             return
         with st.form(f"form_br_{mode}_{versi()}"):
             f1, f2 = st.columns([4, 1])
             nama = f1.text_input("Nama barang", value=b.get("nama", ""), placeholder="Contoh: Parfum")
             jumlah = f2.number_input("Jumlah", min_value=0, value=jumlah_b(b) if b else 1, step=1)
-            pl = {l["id"]: nama_lok(l) for l in daftar_lokasi()}
             ids_l = list(pl)
             lok = st.selectbox("Lokasi", ids_l, index=idx(ids_l, b.get("lokasi", "")),
                                format_func=lambda i: pl[i])
@@ -1294,7 +1308,7 @@ def halaman_pindah():
         st.info("Belum ada barang.")
         return
     if not D["lokasi"]:
-        st.info("Buat lokasi dulu di Master data > Lokasi.")
+        st.info("Buat lokasi dulu di Pengaturan > Lokasi.")
         return
     if st.session_state.pop("pm_reset", False):
         st.session_state.pm_pilih = []
