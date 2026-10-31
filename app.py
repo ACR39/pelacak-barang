@@ -59,6 +59,7 @@ st.markdown("""
 .brand .b1{font-weight:700;font-size:1.05rem;color:#fff;line-height:1.2}
 .brand .b2{font-size:.76rem;color:#94a3b8;margin-top:.1rem}
 .sp{height:1.2rem}
+[data-testid="stElementContainer"]:has(> [data-testid="stMarkdown"] > [data-testid="stMarkdownContainer"] > style:only-child){display:none}
 .grup{font-size:.66rem;font-weight:700;letter-spacing:.12em;color:#64748b;margin:1rem 0 .35rem .3rem}
 [data-testid="stSidebar"] [data-testid="stExpander"]{background:transparent;border:0;box-shadow:none;margin-bottom:.2rem}
 [data-testid="stSidebar"] [data-testid="stExpander"] details{border:0}
@@ -109,8 +110,9 @@ st.markdown("""
 .perhatian{padding:.45rem 0;border-bottom:1px solid #eef0f4;font-size:.92rem;color:#1f2937}
 .perhatian:last-child{border-bottom:0}
 @media (max-width:768px){
-  .block-container{padding:2.4rem 1rem 4rem}
+  .block-container{padding:3.4rem 1rem 4rem}
   [data-testid="stHeader"]{height:2.4rem;min-height:0}
+  [data-testid="stSidebarCollapsedControl"]{top:.35rem;left:.5rem}
   .kepala{padding:.9rem 1rem}
   .judul-hal{font-size:1.35rem}
 }
@@ -147,7 +149,15 @@ st.markdown("""
 .itm .qt{flex:0 0 auto;text-align:right;min-width:48px}
 .itm .qt b{display:block;font-size:1.7rem;font-weight:800;line-height:1.1;color:#111827}
 .itm .qt b.merah{color:#b42318}
-.itm .qt span{font-size:.72rem;color:#6b7280}
+.itm .qt span{display:block;font-size:.72rem;color:#6b7280;white-space:nowrap}
+.itm .qt .st-ok,.itm .qt .st-warn,.itm .qt .st-bad{font-size:.78rem}
+.lencana{white-space:nowrap}
+.itm.pj{flex-wrap:wrap}
+.itm.pj .isi{flex:1 1 180px}
+.itm.pj .qt{text-align:right}
+@media (max-width:640px){
+  .itm.pj .qt{flex:1 1 100%;text-align:left;padding-left:calc(44px + .7rem);display:flex;flex-wrap:wrap;gap:.1rem .5rem;align-items:baseline}
+}
 [class*="st-key-kedit_"] button,[class*="st-key-khapus_"] button,[class*="st-key-kpakai_"] button{min-height:2rem;padding:.1rem .9rem;background:#fff !important;font-weight:600}
 [class*="st-key-kpakai_"] button{border:1px solid #2f5d9e !important;color:#2f5d9e !important}
 [class*="st-key-kedit_"] button{border:1px solid #256b4a !important;color:#256b4a !important}
@@ -159,6 +169,72 @@ st.markdown("""
 .st-key-baris_cari button p,[class*="st-key-item_"] button p{white-space:nowrap}
 </style>
 """, unsafe_allow_html=True)
+
+CSS_GELAP = """
+<style>
+:root{color-scheme:dark}
+[data-testid="stApp"],[data-testid="stAppViewContainer"],[data-testid="stMain"]{background:#0f1722 !important}
+[data-testid="stApp"]{color:#e5e7eb}
+[data-testid="stHeader"]{background:transparent !important}
+[data-testid="stSidebarCollapsedControl"] *,[data-testid="stExpandSidebarButton"] *{color:#e5e7eb !important}
+[data-testid="stMain"] [data-testid="stMarkdownContainer"] p,[data-testid="stMain"] [data-testid="stMarkdownContainer"] li,
+[data-testid="stMain"] h1,[data-testid="stMain"] h2,[data-testid="stMain"] h3,[data-testid="stMain"] h4,
+[data-testid="stMain"] [data-testid="stWidgetLabel"] p,[data-testid="stMain"] [data-testid="stCaptionContainer"],
+[data-testid="stMain"] [data-testid="stCaptionContainer"] p,[data-testid="stMain"] [data-testid="stExpander"] summary p,
+[data-testid="stMain"] [data-testid="stRadio"] label p,[data-testid="stMain"] [data-testid="stCheckbox"] label p,
+[data-testid="stMain"] [data-testid="stToggle"] label p,[data-testid="stMain"] [data-testid="stTab"] p{color:#e5e7eb !important}
+[data-testid="stMain"] [data-testid="stCaptionContainer"],[data-testid="stMain"] [data-testid="stCaptionContainer"] p{color:#94a3b8 !important}
+.eyebrow{color:#5ccf9c !important}
+.judul-hal{color:#f1f5f9 !important}
+.kepala{background:#172131 !important;border-color:#2a3547 !important;border-left-color:#34a874 !important;box-shadow:none !important;color:#e5e7eb !important}
+.kepala .desk,.sc-ket,.sc-lab{color:#94a3b8 !important}
+.st-key-kartu_filter,.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_perhatian,[class*="st-key-kartu_g"],[class*="st-key-kartu_tgl"],
+.statcard,[data-testid="stForm"],[data-testid="stExpander"],[data-testid="stMetric"],[class*="st-key-item_"]{
+  background:#172131 !important;border-color:#2a3547 !important;box-shadow:none !important;color:#e5e7eb !important}
+[data-testid="stExpander"] details{border-color:#2a3547 !important}
+.sc-judul,.sc-val,.itm .jd,.itm .qt b,.perhatian,.brg{color:#f1f5f9 !important}
+.sc-val.m,.itm .qt b.merah{color:#f87171 !important}
+.sc-val.g{color:#4ade80 !important}
+.sc-stat{border-left-color:#2a3547 !important}
+.sub,.itm .mt,.itm .cat,.itm .qt span{color:#9aa7b8 !important}
+.perhatian{border-bottom-color:#2a3547 !important}
+.garis{border-top-color:#2a3547 !important}
+.itm .ic{background:#1f3a2f !important;color:#5ccf9c !important}
+.tag{background:#1f3a2f;color:#5ccf9c}
+.tag-m{background:#3b3010;color:#fcd34d}
+.bidang{background:#1b2d27 !important;color:#5ccf9c !important;border-left-color:#34a874 !important}
+.st-ok{color:#4ade80 !important}.st-warn{color:#fbbf24 !important}.st-bad{color:#f87171 !important}
+.lc-m{background:#3b3010 !important;color:#fcd34d !important}
+.lc-r{background:#431a17 !important;color:#fca5a5 !important}
+.lc-b{background:#14284a !important;color:#93c5fd !important}
+[class*="st-key-kedit_"] button,[class*="st-key-khapus_"] button,[class*="st-key-kpakai_"] button{background:#1e293b !important}
+[class*="st-key-kedit_"] button{border-color:#34a874 !important;color:#5ccf9c !important}
+[class*="st-key-khapus_"] button{border-color:#f87171 !important;color:#f87171 !important}
+[class*="st-key-kpakai_"] button{border-color:#60a5fa !important;color:#93c5fd !important}
+[data-testid="stMain"] button[kind="secondary"],[data-testid="stMain"] button[kind="secondaryFormSubmit"],[data-testid="stMain"] [data-testid="stDownloadButton"] button{
+  background:#1e293b;border-color:#334155;color:#e5e7eb}
+[data-testid="stMain"] button[kind="secondary"] p,[data-testid="stMain"] button[kind="secondaryFormSubmit"] p,[data-testid="stMain"] [data-testid="stDownloadButton"] button p{color:inherit !important}
+[data-testid="stMain"] button[kind="primary"] p,[data-testid="stMain"] button[kind="primaryFormSubmit"] p{color:#fff !important}
+[data-baseweb="input"],[data-baseweb="base-input"],[data-baseweb="textarea"],[data-baseweb="select"] > div,[data-testid="stDateInputField"],
+[data-testid="stNumberInputContainer"],[data-testid="stFileUploaderDropzone"],[data-testid="stCameraInput"],
+[data-testid="stTextInputRootElement"],[data-testid="stTextAreaRootElement"]{background:#0f1722 !important;border-color:#334155 !important}
+[data-baseweb="input"] input,[data-baseweb="base-input"] input,textarea,[data-baseweb="select"] div,[data-testid="stNumberInputContainer"] input{color:#e5e7eb !important;-webkit-text-fill-color:#e5e7eb}
+[data-baseweb="input"] svg,[data-baseweb="select"] svg,[data-testid="stFileUploaderDropzone"] svg{fill:#94a3b8 !important}
+[data-baseweb="popover"] > div,[data-baseweb="popover"] ul,[data-baseweb="menu"],[role="listbox"]{background:#172131 !important;color:#e5e7eb !important}
+[data-baseweb="popover"] li{color:#e5e7eb !important}
+[data-baseweb="popover"] li:hover,[data-baseweb="popover"] li[aria-selected="true"]{background:#24324a !important}
+[data-baseweb="tag"]{background:#24324a !important}
+[data-baseweb="tag"] span{color:#e5e7eb !important}
+[data-testid="stButtonGroup"] button[aria-checked="false"]{background:#0f1722 !important;color:#e5e7eb !important;border-color:#334155 !important}
+[data-testid="stButtonGroup"] button p{color:inherit !important}
+[data-testid="stAlertContainer"]{background:rgba(148,163,184,.14) !important;color:#e5e7eb !important}
+[data-testid="stAlertContainer"] p,[data-testid="stAlertContainer"] li{color:#e5e7eb !important}
+[data-testid="stTabs"] [data-baseweb="tab-list"]{border-bottom-color:#2a3547}
+[data-testid="stArrowVegaLiteChart"],[data-testid="stVegaLiteChart"]{filter:invert(1) hue-rotate(180deg)}
+[data-testid="stImage"] img{border-radius:8px}
+[data-testid="stProgress"] p{color:#e5e7eb !important}
+</style>
+"""
 
 TANPA = "Tanpa lokasi"
 TANPA_KAT = "Tanpa kategori"
@@ -222,6 +298,7 @@ def data_kosong() -> dict:
         "riwayat": [],    # [{"id","barang","nama","dari","ke","waktu","oleh"}]
         "rencana": [],    # [{"id","nama","jumlah","harga","prioritas","catatan","dibuat","dibeli"}]
         "paket": [],      # [{"id","nama","isi":[{"id","nama","barang","jumlah","siap"}]}]  daftar bawaan
+        "sampah": [],     # [{"id","barang":{...data barang...},"dihapus":"YYYY-MM-DD HH:MM","oleh"}]  tempat sampah
     }
 
 
@@ -423,6 +500,7 @@ PERAN = ("admin", "pengisi")
 MAKS_GAGAL = 5
 KUNCI_DETIK = 60
 COOKIE = "barang_sesi"
+COOKIE_TEMA = "barang_tema"
 
 
 def _akun() -> dict:
@@ -490,14 +568,14 @@ def baca_token(token: str, akun: dict):
         return None
 
 
-def js_cookie(nilai: str, detik: int):
+def js_cookie(nilai: str, detik: int, nama: str = COOKIE):
     """Pasang (atau hapus, detik=0) cookie sesi di peramban lewat komponen tak terlihat."""
     import streamlit.components.v1 as components
     components.html(
         f"""<script>
         const d = window.parent.document;
         const aman = window.parent.location.protocol === 'https:' ? '; Secure' : '';
-        d.cookie = "{COOKIE}={nilai}; Max-Age={detik}; Path=/; SameSite=Lax" + aman;
+        d.cookie = "{nama}={nilai}; Max-Age={detik}; Path=/; SameSite=Lax" + aman;
         </script>""", height=0)
 
 
@@ -611,6 +689,15 @@ D = st.session_state.data
 for kunci, awal in data_kosong().items():
     D.setdefault(kunci, awal)
 
+# Mode gelap: pilihan terakhir diingat lewat cookie peramban.
+if "gelap" not in st.session_state:
+    try:
+        st.session_state.gelap = st.context.cookies.get(COOKIE_TEMA, "") == "gelap"
+    except Exception:
+        st.session_state.gelap = False
+if st.session_state.gelap:
+    st.markdown(CSS_GELAP, unsafe_allow_html=True)
+
 # Dibuka dari pindaian label QR: ?lokasi=<id>&sub=<id> langsung membuka daftar isi tempat itu.
 _qp_lok = st.query_params.get("lokasi")
 _qp_tem = st.query_params.get("tempat")
@@ -643,7 +730,7 @@ def atur(kunci: str, nilai):
 def pindah_halaman(h: str):
     """Ganti menu sekaligus tutup form/konfirmasi yang masih terbuka."""
     st.session_state.halaman = h
-    for k in ("br_mode", "br_hapus", "pj_hapus", "pj_mode", "rc_mode", "rc_hapus", "pk_hapus",
+    for k in ("br_mode", "br_hapus", "sp_hapus", "sp_kosong", "pj_hapus", "pj_mode", "rc_mode", "rc_hapus", "pk_hapus",
               "edit_tempat", "hapus_tempat", "edit_kategori", "hapus_kategori",
               "edit_lokasi", "hapus_lokasi", "edit_sub", "hapus_sub"):
         st.session_state.pop(k, None)
@@ -789,6 +876,9 @@ def lencana(b: dict) -> str:
     p = pinjam_aktif(b["id"])
     if p:
         h += f'<span class="lencana lc-m">Dipinjam {html.escape(p.get("orang", ""))}</span>'
+    n_isi = len(isi_dari(b["id"]))
+    if n_isi:
+        h += f'<span class="lencana lc-b">Berisi {n_isi}</span>'
     return h
 
 
@@ -802,6 +892,91 @@ def status_sisa(s) -> str:
     if s <= 30:
         return f'<span class="st-warn">{s} hari lagi</span>'
     return f'<span class="st-ok">{s} hari lagi</span>'
+
+
+MASA_SAMPAH = 30   # hari barang disimpan di tempat sampah sebelum hilang permanen
+
+
+def isi_dari(id_barang: str) -> list:
+    """Barang yang disimpan langsung di dalam barang ini (satu tingkat)."""
+    return [x for x in D["barang"] if x.get("dalam") == id_barang]
+
+
+def keturunan(id_barang: str) -> set:
+    """Semua barang di dalam barang ini, termasuk isi dari isinya."""
+    hasil, antre = set(), [id_barang]
+    while antre:
+        sekarang_id = antre.pop(0)
+        for x in D["barang"]:
+            if x.get("dalam") == sekarang_id and x["id"] not in hasil:
+                hasil.add(x["id"])
+                antre.append(x["id"])
+    return hasil
+
+
+def induk_dari(b: dict):
+    return next((x for x in D["barang"] if x["id"] == b.get("dalam")), None) if b.get("dalam") else None
+
+
+def ikut_induk(x: dict, induk: dict) -> bool:
+    """Samakan lokasi barang x dengan barang induknya. True kalau lokasinya berubah."""
+    dari = nama_tempat(x)
+    x["lokasi"] = induk.get("lokasi", "")
+    if induk.get("sublokasi"):
+        x["sublokasi"] = induk["sublokasi"]
+    else:
+        x.pop("sublokasi", None)
+    ke = nama_tempat(x)
+    if dari == ke:
+        return False
+    x["diubah"] = hari_ini().isoformat()
+    catat(x["id"], x["nama"], dari, ke)
+    return True
+
+
+def sinkron_isi(id_induk: str, lihat=None):
+    """Isi barang selalu ikut lokasi induknya, juga isi dari isinya."""
+    lihat = lihat if lihat is not None else set()
+    if id_induk in lihat:
+        return
+    lihat.add(id_induk)
+    induk = next((x for x in D["barang"] if x["id"] == id_induk), None)
+    if not induk:
+        return
+    for x in isi_dari(id_induk):
+        ikut_induk(x, induk)
+        sinkron_isi(x["id"], lihat)
+
+
+def pesan_hapus_barang(b: dict) -> str:
+    n = len(isi_dari(b["id"]))
+    return (f"Pindahkan {b['nama']} ke tempat sampah?"
+            + (f" {n} barang di dalamnya akan dilepas dari barang ini." if n else ""))
+
+
+def buang_barang(b: dict):
+    """Pindahkan barang ke tempat sampah. Barang di dalamnya dilepas dari barang ini."""
+    for x in isi_dari(b["id"]):
+        x.pop("dalam", None)
+    D["barang"] = [x for x in D["barang"] if x["id"] != b["id"]]
+    D["sampah"].append({"id": uuid.uuid4().hex[:8], "barang": dict(b),
+                        "dihapus": sekarang().strftime("%Y-%m-%d %H:%M"), "oleh": pengguna_nama()})
+
+
+def sisa_sampah(s: dict) -> int:
+    """Berapa hari lagi sebelum catatan sampah dihapus permanen."""
+    try:
+        t = datetime.strptime(s.get("dihapus", ""), "%Y-%m-%d %H:%M").replace(tzinfo=WIB)
+        return MASA_SAMPAH - (sekarang() - t).days
+    except Exception:
+        return MASA_SAMPAH
+
+
+def teks_cari(b: dict) -> str:
+    """Teks yang dicocokkan saat mencari barang, termasuk nama barang induk dan isinya."""
+    induk = induk_dari(b)
+    return " ".join([b["nama"], b.get("catatan", ""), nama_tempat(b), nama_kat(b),
+                     induk["nama"] if induk else ""] + [x["nama"] for x in isi_dari(b["id"])]).lower()
 
 
 def catat(id_barang: str, nama: str, dari: str, ke: str):
@@ -865,6 +1040,13 @@ def kartu_barang_html(b: dict, foto: bool = True) -> str:
             ekstra.append(f"{lab}: {status_sisa(s)}")
     if b.get("dipakai"):
         ekstra.append(f"Dipakai: {fmt_iso(b['dipakai'])}")
+    induk = induk_dari(b)
+    if induk:
+        ekstra.append(f"Di dalam: {html.escape(induk['nama'])}")
+    isi = isi_dari(b["id"])
+    if isi:
+        ekstra.append("Berisi: " + html.escape(", ".join(x["nama"] for x in isi[:5]))
+                      + (f" +{len(isi) - 5} lagi" if len(isi) > 5 else ""))
     cat = ""
     if b.get("catatan"):
         cat += f'<div class="cat">{html.escape(b["catatan"])}</div>'
@@ -920,7 +1102,7 @@ if not cfg_github():
     st.warning("Mode uji coba: data disimpan di file lokal dan bisa hilang saat aplikasi "
                "dimulai ulang. Isi pengaturan GitHub (lihat README) agar data permanen.")
 
-UTAMA = ["Cari barang", "Kelola barang", "Pindah massal", "Riwayat perpindahan"]
+UTAMA = ["Cari barang", "Kelola barang", "Pindah massal", "Riwayat perpindahan", "Tempat sampah"]
 PANTAU = ["Pinjam-meminjam", "Perlu beli", "Rencana beli", "Daftar bawaan", "Jarang dipakai",
           "Kedaluwarsa dan garansi", "Nilai barang"]
 MASTER = ["Tempat", "Lokasi", "Sub lokasi", "Kategori", "Label QR", "Cadangan dan pindah data"]
@@ -929,7 +1111,7 @@ if st.session_state.get("halaman") not in HALAMAN:
     st.session_state.halaman = "Beranda"
 halaman = st.session_state.halaman
 IKON = {"Beranda": "home", "Cari barang": "search", "Kelola barang": "inventory_2",
-        "Pindah massal": "swap_horiz", "Riwayat perpindahan": "history",
+        "Pindah massal": "swap_horiz", "Riwayat perpindahan": "history", "Tempat sampah": "delete",
         "Pinjam-meminjam": "handshake", "Perlu beli": "shopping_cart", "Rencana beli": "checklist",
         "Daftar bawaan": "luggage", "Jarang dipakai": "schedule",
         "Kedaluwarsa dan garansi": "event_busy", "Nilai barang": "payments",
@@ -962,6 +1144,9 @@ with st.sidebar:
             for h in MASTER:
                 tombol_nav(h)
     st.markdown('<div class="sp"></div>', unsafe_allow_html=True)
+    st.toggle("Mode gelap", key="gelap", on_change=atur, args=("tema_ubah", True))
+    if st.session_state.pop("tema_ubah", False):
+        js_cookie("gelap" if st.session_state.gelap else "terang", 31536000, COOKIE_TEMA)
     if st.button("Muat ulang", key="nav_muat", use_container_width=True, icon=":material/refresh:",
                  help="Ambil data terbaru dari penyimpanan"):
         muat_ke_sesi()
@@ -982,6 +1167,7 @@ DESKRIPSI = {
     "Kelola barang": "Tambah, ubah, atau hapus barang beserta lokasi, foto, dan tanggalnya.",
     "Pindah massal": "Pindahkan banyak barang sekaligus ke lokasi lain, misalnya saat membereskan kotak.",
     "Riwayat perpindahan": "Catatan otomatis kapan dan dari mana ke mana barang dipindah.",
+    "Tempat sampah": "Barang yang dibuang disimpan 30 hari di sini, bisa dipulihkan sebelum hilang permanen.",
     "Pinjam-meminjam": "Catat barang yang kamu pinjamkan atau yang kamu pinjam, lengkap dengan tenggatnya.",
     "Perlu beli": "Barang yang habis atau stoknya sudah di batas minimum, jadi daftar belanja.",
     "Rencana beli": "Daftar barang baru yang ingin dibeli, lengkap dengan prioritas dan perkiraan harga.",
@@ -1136,8 +1322,7 @@ if halaman == "Cari barang":
         if f_kat != "semua":
             hasil = [b for b in hasil if b.get("kategori") == f_kat]
         if q:
-            hasil = [b for b in hasil if q in " ".join(
-                [b["nama"], b.get("catatan", ""), nama_tempat(b), nama_kat(b)]).lower()]
+            hasil = [b for b in hasil if q in teks_cari(b)]
         _l = next((l for l in D["lokasi"] if l["id"] == f_lok), None) if f_lok != "semua" else None
         _s = next((s for s in D["sublokasi"] if s["id"] == f_sub), None) if f_sub != "semua" else None
         _fotos = []
@@ -1205,8 +1390,7 @@ def halaman_barang():
             if mode_tampil == "Kartu":
                 urut = sorted(D["barang"], key=lambda x: x["nama"].lower())
                 if cari:
-                    urut = [x for x in urut if cari in " ".join(
-                        [x["nama"], x.get("catatan", ""), nama_tempat(x), nama_kat(x)]).lower()]
+                    urut = [x for x in urut if cari in teks_cari(x)]
                     if not urut:
                         st.info("Tidak ada barang yang cocok dengan pencarian.")
                 for b in urut:
@@ -1222,14 +1406,11 @@ def halaman_barang():
                             b["dipakai"] = hari_ini().isoformat()
                             selesai_simpan("Dicatat dipakai hari ini.")
                         if st.session_state.get("br_hapus") == b["id"]:
-                            st.warning(f"Hapus {b['nama']}?")
+                            st.warning(pesan_hapus_barang(b))
                             y, n, _ = st.columns([1, 1, 2])
-                            if y.button("Ya, hapus", type="primary", key=f"brya_{b['id']}"):
-                                foto_lama = b.get("foto", "")
-                                D["barang"] = [x for x in D["barang"] if x["id"] != b["id"]]
-                                selesai_simpan("Dihapus.",
-                                               sesudah=(lambda p=foto_lama: hapus_foto(p)) if foto_lama else None,
-                                               br_hapus=None)
+                            if y.button("Ya, buang", type="primary", key=f"brya_{b['id']}"):
+                                buang_barang(b)
+                                selesai_simpan("Dipindahkan ke tempat sampah.", br_hapus=None)
                             n.button("Batal", key=f"brbatal_{b['id']}", on_click=atur, args=("br_hapus", None))
                 return
             lebar = [0.8, 1.2, 4, 3.4, 2.2, 1, 1.7]
@@ -1238,8 +1419,7 @@ def halaman_barang():
                 kol.markdown(f'<div class="thead-s">{judul}</div>', unsafe_allow_html=True)
             urut = sorted(D["barang"], key=lambda x: x["nama"].lower())
             if cari:
-                urut = [x for x in urut if cari in " ".join(
-                    [x["nama"], x.get("catatan", ""), nama_tempat(x), nama_kat(x)]).lower()]
+                urut = [x for x in urut if cari in teks_cari(x)]
                 if not urut:
                     st.info("Tidak ada barang yang cocok dengan pencarian.")
             for no, b in enumerate(urut, 1):
@@ -1256,13 +1436,11 @@ def halaman_barang():
                 t1.button("✏️", key=f"bredit_{b['id']}", help="Ubah", on_click=atur, args=("br_mode", b["id"]))
                 t2.button("🗑️", key=f"brhapus_{b['id']}", help="Hapus", on_click=atur, args=("br_hapus", b["id"]))
                 if st.session_state.get("br_hapus") == b["id"]:
-                    st.warning(f"Hapus {b['nama']}?")
+                    st.warning(pesan_hapus_barang(b))
                     y, n, _ = st.columns([1, 1, 4])
-                    if y.button("Ya, hapus", type="primary", key=f"brya_{b['id']}"):
-                        foto_lama = b.get("foto", "")
-                        D["barang"] = [x for x in D["barang"] if x["id"] != b["id"]]
-                        selesai_simpan("Dihapus.", sesudah=(lambda p=foto_lama: hapus_foto(p)) if foto_lama else None,
-                                       br_hapus=None)
+                    if y.button("Ya, buang", type="primary", key=f"brya_{b['id']}"):
+                        buang_barang(b)
+                        selesai_simpan("Dipindahkan ke tempat sampah.", br_hapus=None)
                     n.button("Batal", key=f"brbatal_{b['id']}", on_click=atur, args=("br_hapus", None))
             st.markdown('<div class="garis"></div>', unsafe_allow_html=True)
             return
@@ -1278,33 +1456,48 @@ def halaman_barang():
                 st.caption("Minta admin menambahkan lokasi di Pengaturan.")
             c2.button("Kembali", on_click=atur, args=("br_mode", None))
             return
-        # Pilihan tempat ada di luar form supaya daftar lokasi di bawahnya langsung ikut berubah.
-        f_tem = ""
-        if D["tempat"]:
-            ptem = {t["id"]: t["nama"] for t in sorted(D["tempat"], key=lambda t: t["nama"].lower())}
-            ops_t = [""] + list(ptem)
-            awal_t = (tempat_dari_lok(lokasi_dari(b)) or {}).get("id", "") if lokasi_dari(b) else ""
-            f_tem = st.selectbox("Tempat", ops_t, index=idx(ops_t, awal_t), key=f"br_tempat_{mode}_{versi()}",
-                                 format_func=lambda i: "Semua tempat" if not i else ptem[i],
-                                 help="Pilih tempat dulu supaya daftar lokasi di bawah hanya menampilkan isi tempat itu.")
-        pl = {l["id"]: (l["nama"] if f_tem else nama_lok(l)) for l in daftar_lokasi()
-              if not f_tem or l.get("tempat") == f_tem}
-        if not pl:
-            st.info("Tempat ini belum punya lokasi. Pilih tempat lain, atau tambahkan lokasinya di Pengaturan > Lokasi.")
-            st.button("Kembali", key="br_kembali_kosong", on_click=atur, args=("br_mode", None))
-            return
-        ids_l = list(pl)
-        k_lok = f"br_lok_{mode}_{versi()}_{f_tem or 'semua'}"
-        lok = st.selectbox("Lokasi", ids_l, index=idx(ids_l, b.get("lokasi", "")), key=k_lok,
-                           format_func=lambda i: pl[i])
-        sub = ""
-        psub_f = {x["id"]: x["nama"] for x in D["sublokasi"] if x["lokasi"] == lok}
-        if psub_f:
-            ops_s = [""] + list(psub_f)
-            awal_s = b.get("sublokasi", "") if (sub_dari(b) and b.get("lokasi") == lok) else ""
-            sub = st.selectbox("Sub lokasi (boleh kosong)", ops_s, index=idx(ops_s, awal_s),
-                               key=f"br_sub_{mode}_{versi()}_{lok}",
-                               format_func=lambda i: "Tanpa sub lokasi" if not i else psub_f[i])
+        kandidat = [x for x in sorted(D["barang"], key=lambda x: x["nama"].lower())
+                    if x["id"] != b.get("id") and x["id"] not in keturunan(b.get("id", "-"))]
+        induk, peta_i = "", {x["id"]: x for x in kandidat}
+        if kandidat:
+            ops_i = [""] + list(peta_i)
+            induk = st.selectbox("Disimpan di dalam barang lain (boleh kosong)", ops_i,
+                                 index=idx(ops_i, b.get("dalam", "")), key=f"br_dalam_{mode}_{versi()}",
+                                 format_func=lambda i: "Tidak, simpan langsung di lokasi" if not i
+                                 else f'{peta_i[i]["nama"]} ({nama_tempat(peta_i[i])})',
+                                 help="Contoh: plester disimpan di dalam Tas P3K. Lokasinya otomatis mengikuti barang itu.")
+        if induk:
+            p_induk = peta_i[induk]
+            lok, sub = p_induk.get("lokasi", ""), p_induk.get("sublokasi", "")
+            st.caption(f"Lokasi mengikuti {p_induk['nama']}: {nama_tempat(p_induk)}")
+        else:
+            # Pilihan tempat ada di luar form supaya daftar lokasi di bawahnya langsung ikut berubah.
+            f_tem = ""
+            if D["tempat"]:
+                ptem = {t["id"]: t["nama"] for t in sorted(D["tempat"], key=lambda t: t["nama"].lower())}
+                ops_t = [""] + list(ptem)
+                awal_t = (tempat_dari_lok(lokasi_dari(b)) or {}).get("id", "") if lokasi_dari(b) else ""
+                f_tem = st.selectbox("Tempat", ops_t, index=idx(ops_t, awal_t), key=f"br_tempat_{mode}_{versi()}",
+                                     format_func=lambda i: "Semua tempat" if not i else ptem[i],
+                                     help="Pilih tempat dulu supaya daftar lokasi di bawah hanya menampilkan isi tempat itu.")
+            pl = {l["id"]: (l["nama"] if f_tem else nama_lok(l)) for l in daftar_lokasi()
+                  if not f_tem or l.get("tempat") == f_tem}
+            if not pl:
+                st.info("Tempat ini belum punya lokasi. Pilih tempat lain, atau tambahkan lokasinya di Pengaturan > Lokasi.")
+                st.button("Kembali", key="br_kembali_kosong", on_click=atur, args=("br_mode", None))
+                return
+            ids_l = list(pl)
+            k_lok = f"br_lok_{mode}_{versi()}_{f_tem or 'semua'}"
+            lok = st.selectbox("Lokasi", ids_l, index=idx(ids_l, b.get("lokasi", "")), key=k_lok,
+                               format_func=lambda i: pl[i])
+            sub = ""
+            psub_f = {x["id"]: x["nama"] for x in D["sublokasi"] if x["lokasi"] == lok}
+            if psub_f:
+                ops_s = [""] + list(psub_f)
+                awal_s = b.get("sublokasi", "") if (sub_dari(b) and b.get("lokasi") == lok) else ""
+                sub = st.selectbox("Sub lokasi (boleh kosong)", ops_s, index=idx(ops_s, awal_s),
+                                   key=f"br_sub_{mode}_{versi()}_{lok}",
+                                   format_func=lambda i: "Tanpa sub lokasi" if not i else psub_f[i])
         with st.form(f"form_br_{mode}_{versi()}"):
             f1, f2 = st.columns([4, 1])
             nama = f1.text_input("Nama barang", value=b.get("nama", ""), placeholder="Contoh: Parfum")
@@ -1367,7 +1560,7 @@ def halaman_barang():
                                "catatan": catatan.strip(), "harga": int(harga),
                                "kedaluwarsa": kd.isoformat() if kd else "",
                                "garansi": gr.isoformat() if gr else "", "habis": bool(habis),
-                               "minimum": int(minimum)}
+                               "minimum": int(minimum), "dalam": induk}
                         for kunci, v in isi.items():
                             if v or kunci in ("nama", "lokasi"):
                                 baru[kunci] = v
@@ -1389,6 +1582,7 @@ def halaman_barang():
                             if nama_tempat(b) != tempat_baru:
                                 catat(id_, nama, nama_tempat(b), tempat_baru)
                             D["barang"] = [baru if x["id"] == mode else x for x in D["barang"]]
+                        sinkron_isi(id_)
                         selesai_simpan("Tersimpan.",
                                        sesudah=(lambda p=foto_hapus: hapus_foto(p)) if foto_hapus else None,
                                        br_mode=None)
@@ -1446,8 +1640,12 @@ def halaman_pindah():
                 ke = nama_tempat(b)
                 if dari != ke:
                     b["diubah"] = hari_ini().isoformat()
+                    if b.get("dalam") and b["dalam"] not in pilih:
+                        b.pop("dalam", None)       # dipindah sendirian: keluar dari barang induknya
                     catat(i, b["nama"], dari, ke)
                     dipindah += 1
+            for i in pilih:
+                sinkron_isi(i)                      # isi barang ikut pindah bersama induknya
             if not dipindah:
                 st.info("Semua barang yang dipilih sudah berada di tujuan itu.")
             else:
@@ -1484,6 +1682,68 @@ def halaman_riwayat():
             st.markdown('<div class="garis"></div>', unsafe_allow_html=True)
 
 
+# ------------------------------------------------------------- tempat sampah
+def halaman_sampah():
+    lama = [s for s in D["sampah"] if sisa_sampah(s) <= 0]
+    if lama:                              # bersihkan yang sudah lewat masa simpan
+        fs = [s["barang"].get("foto", "") for s in lama]
+        D["sampah"] = [s for s in D["sampah"] if sisa_sampah(s) > 0]
+        selesai_simpan(f"{len(lama)} barang lama dibersihkan dari tempat sampah.",
+                       sesudah=lambda fs=fs: [hapus_foto(p) for p in fs if p])
+    ada = sorted(D["sampah"], key=lambda s: s.get("dihapus", ""), reverse=True)
+    with st.container(key="kartu_barang"):
+        if not ada:
+            st.info(f"Tempat sampah kosong. Barang yang dibuang disimpan di sini {MASA_SAMPAH} hari "
+                    "sebelum hilang permanen.")
+            return
+        st.caption(f"{len(ada)} barang. Setelah {MASA_SAMPAH} hari barang dihapus permanen, termasuk fotonya.")
+        for s in ada:
+            b = s["barang"]
+            with st.container(key=f"item_s_{s['id']}"):
+                st.markdown(kartu_barang_html(b), unsafe_allow_html=True)
+                st.caption(f"Dibuang {fmt_waktu(s.get('dihapus', ''))} oleh {s.get('oleh', '')} · "
+                           f"hilang permanen dalam {max(sisa_sampah(s), 0)} hari")
+                e1, e2, _ = st.columns([1.2, 1.8, 1])
+                if e1.button("Pulihkan", key=f"kpakai_sp_{s['id']}", use_container_width=True):
+                    pulih = dict(b)
+                    induk = next((x for x in D["barang"] if x["id"] == pulih.get("dalam")), None)
+                    if induk:                 # kembali ke dalam induknya, ikut lokasi induk
+                        pulih["lokasi"] = induk.get("lokasi", "")
+                        if induk.get("sublokasi"):
+                            pulih["sublokasi"] = induk["sublokasi"]
+                        else:
+                            pulih.pop("sublokasi", None)
+                    else:
+                        pulih.pop("dalam", None)
+                    pulih["diubah"] = hari_ini().isoformat()
+                    D["barang"].append(pulih)
+                    D["sampah"] = [x for x in D["sampah"] if x["id"] != s["id"]]
+                    catat(pulih["id"], pulih["nama"], "(tempat sampah)", nama_tempat(pulih))
+                    selesai_simpan("Barang dipulihkan.")
+                e2.button("Hapus permanen", key=f"khapus_sp_{s['id']}", on_click=atur,
+                          args=("sp_hapus", s["id"]), use_container_width=True)
+                if st.session_state.get("sp_hapus") == s["id"]:
+                    st.warning(f"Hapus permanen {b['nama']}? Ini tidak bisa dibatalkan.")
+                    y, n, _ = st.columns([1.3, 1, 2])
+                    if y.button("Ya, hapus permanen", type="primary", key=f"spya_{s['id']}"):
+                        foto = b.get("foto", "")
+                        D["sampah"] = [x for x in D["sampah"] if x["id"] != s["id"]]
+                        selesai_simpan("Dihapus permanen.",
+                                       sesudah=(lambda p=foto: hapus_foto(p)) if foto else None, sp_hapus=None)
+                    n.button("Batal", key=f"spbt_{s['id']}", on_click=atur, args=("sp_hapus", None))
+        if st.session_state.get("sp_kosong"):
+            st.warning("Kosongkan seluruh tempat sampah? Semua barang di dalamnya hilang permanen.")
+            y, n, _ = st.columns([1.5, 1, 2])
+            if y.button("Ya, kosongkan", type="primary", key="sp_kosong_ya"):
+                fs = [s["barang"].get("foto", "") for s in D["sampah"]]
+                D["sampah"] = []
+                selesai_simpan("Tempat sampah dikosongkan.",
+                               sesudah=lambda fs=fs: [hapus_foto(p) for p in fs if p], sp_kosong=False)
+            n.button("Batal", key="sp_kosong_bt", on_click=atur, args=("sp_kosong", False))
+        else:
+            st.button("Kosongkan tempat sampah", key="sp_kosong_btn", on_click=atur, args=("sp_kosong", True))
+
+
 # ------------------------------------------------------------ pinjam-meminjam
 def _baris_hapus_pinjam(p):
     """Tampilkan konfirmasi hapus kalau baris ini sedang dikonfirmasi."""
@@ -1510,7 +1770,7 @@ def kartu_pinjam_html(p: dict) -> str:
                  f'{status_sisa(sisa_hari(p["tenggat"]))}</div>')
     else:
         kanan = '<div class="qt"><span>Tanpa tenggat</span></div>'
-    return (f'<div class="itm"><div class="ic">{ic}</div><div class="isi"><div class="jd">'
+    return (f'<div class="itm pj"><div class="ic">{ic}</div><div class="isi"><div class="jd">'
             f'{html.escape(p.get("nama", ""))}{tanda}</div>{mt}{cat}</div>{kanan}</div>')
 
 
@@ -2409,6 +2669,8 @@ if halaman == "Pindah massal":
     halaman_pindah()
 if halaman == "Riwayat perpindahan":
     halaman_riwayat()
+if halaman == "Tempat sampah":
+    halaman_sampah()
 if halaman == "Pinjam-meminjam":
     halaman_pinjam()
 if halaman == "Perlu beli":
