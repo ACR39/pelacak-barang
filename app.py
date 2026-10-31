@@ -1206,21 +1206,22 @@ def halaman_barang():
             st.info("Tempat ini belum punya lokasi. Pilih tempat lain, atau tambahkan lokasinya di Pengaturan > Lokasi.")
             st.button("Kembali", key="br_kembali_kosong", on_click=atur, args=("br_mode", None))
             return
+        ids_l = list(pl)
+        k_lok = f"br_lok_{mode}_{versi()}_{f_tem or 'semua'}"
+        lok = st.selectbox("Lokasi", ids_l, index=idx(ids_l, b.get("lokasi", "")), key=k_lok,
+                           format_func=lambda i: pl[i])
+        sub = ""
+        psub_f = {x["id"]: x["nama"] for x in D["sublokasi"] if x["lokasi"] == lok}
+        if psub_f:
+            ops_s = [""] + list(psub_f)
+            awal_s = b.get("sublokasi", "") if (sub_dari(b) and b.get("lokasi") == lok) else ""
+            sub = st.selectbox("Sub lokasi (boleh kosong)", ops_s, index=idx(ops_s, awal_s),
+                               key=f"br_sub_{mode}_{versi()}_{lok}",
+                               format_func=lambda i: "Tanpa sub lokasi" if not i else psub_f[i])
         with st.form(f"form_br_{mode}_{versi()}"):
             f1, f2 = st.columns([4, 1])
             nama = f1.text_input("Nama barang", value=b.get("nama", ""), placeholder="Contoh: Parfum")
             jumlah = f2.number_input("Jumlah", min_value=0, value=jumlah_b(b) if b else 1, step=1)
-            ids_l = list(pl)
-            lok = st.selectbox("Lokasi", ids_l, index=idx(ids_l, b.get("lokasi", "")),
-                               format_func=lambda i: pl[i])
-            sub = ""
-            if D["sublokasi"]:
-                ops = [""] + [x["id"] for x in D["sublokasi"] if x["lokasi"] in pl]
-                pt = {x["id"]: f"{pl[x['lokasi']]} › {x['nama']}" for x in D["sublokasi"] if x["lokasi"] in pl}
-                awal = b.get("sublokasi", "") if sub_dari(b) else ""
-                sub = st.selectbox("Sub lokasi (boleh kosong)", ops, index=idx(ops, awal),
-                                   format_func=lambda i: "Tanpa sub lokasi" if not i else pt[i],
-                                   help="Pilih sub lokasi yang berada di bawah lokasi di atas.")
             kat = ""
             if D["kategori"]:
                 pk = {k["id"]: k["nama"] for k in D["kategori"]}
