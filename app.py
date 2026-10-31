@@ -624,6 +624,15 @@ def atur(kunci: str, nilai):
     st.session_state[kunci] = nilai
 
 
+def pindah_halaman(h: str):
+    """Ganti menu sekaligus tutup form/konfirmasi yang masih terbuka."""
+    st.session_state.halaman = h
+    for k in ("br_mode", "br_hapus", "pj_hapus",
+              "edit_tempat", "hapus_tempat", "edit_kategori", "hapus_kategori",
+              "edit_lokasi", "hapus_lokasi", "edit_sub", "hapus_sub"):
+        st.session_state.pop(k, None)
+
+
 def versi() -> int:
     return st.session_state.get("ver", 0)
 
@@ -896,7 +905,7 @@ with st.sidebar:
 
     def tombol_nav(h):
         st.button(h, key=f"nav_{h}", use_container_width=True, icon=f":material/{IKON[h]}:",
-                  type="primary" if h == halaman else "secondary", on_click=atur, args=("halaman", h))
+                  type="primary" if h == halaman else "secondary", on_click=pindah_halaman, args=(h,))
 
     st.markdown('<div class="grup">UTAMA</div>', unsafe_allow_html=True)
     tombol_nav("Beranda")
