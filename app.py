@@ -59,7 +59,7 @@ st.markdown("""
 .brand .b1{font-weight:700;font-size:1.05rem;color:#fff;line-height:1.2}
 .brand .b2{font-size:.76rem;color:#94a3b8;margin-top:.1rem}
 .sp{height:1.2rem}
-[data-testid="stElementContainer"]:has(> [data-testid="stMarkdown"] > [data-testid="stMarkdownContainer"] > style:only-child){display:none}
+[data-testid="stElementContainer"]:has([data-testid="stMarkdownContainer"] > style:only-child){display:none}
 .grup{font-size:.66rem;font-weight:700;letter-spacing:.12em;color:#64748b;margin:1rem 0 .35rem .3rem}
 [data-testid="stSidebar"] [data-testid="stExpander"]{background:transparent;border:0;box-shadow:none;margin-bottom:.2rem}
 [data-testid="stSidebar"] [data-testid="stExpander"] details{border:0}
@@ -110,7 +110,7 @@ st.markdown("""
 .perhatian{padding:.45rem 0;border-bottom:1px solid #eef0f4;font-size:.92rem;color:#1f2937}
 .perhatian:last-child{border-bottom:0}
 @media (max-width:768px){
-  .block-container{padding:3.4rem 1rem 4rem}
+  .block-container{padding:2.7rem 1rem 4rem}
   [data-testid="stHeader"]{height:2.4rem;min-height:0}
   [data-testid="stSidebarCollapsedControl"]{top:.35rem;left:.5rem}
   .kepala{padding:.9rem 1rem}
