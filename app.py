@@ -499,7 +499,8 @@ LABEL_FIELD = {"nama": "Nama", "jumlah": "Jumlah", "kategori": "Kategori", "loka
                "sublokasi": "Sub lokasi", "catatan": "Catatan", "harga": "Harga beli", "dibeli": "Tanggal beli", "kedaluwarsa": "Kedaluwarsa",
                "garansi": "Garansi", "habis": "Perlu beli", "minimum": "Stok minimum", "dalam": "Di dalam",
                "foto": "Foto", "dipakai": "Dipakai", "merek": "Merek", "ukuran": "Ukuran", "warna": "Warna",
-               "seri": "Nomor seri", "pemilik": "Pemilik", "galeri": "Foto tambahan",
+               "seri": "Nomor seri", "pemilik": "Pemilik", "galeri": "Foto tambahan", "barcode": "Barcode",
+               "cek_tiap": "Cek berkala", "cek_terakhir": "Terakhir dicek",
                "dibawa": "Sedang dibawa sejak", "dibawa_ke": "Dibawa ke", "hilang": "Hilang sejak",
                "hilang_di": "Terakhir terlihat di"}
 
@@ -529,7 +530,9 @@ def _tampil_nilai(d: dict, kunci: str, v, nama_barang: dict | None = None) -> st
         return "Rp " + f"{int(v):,}".replace(",", ".")
     if kunci == "galeri":
         return f"{len(v)} foto" if v else "kosong"
-    if kunci in ("kedaluwarsa", "garansi", "dipakai", "dibeli", "dibawa", "hilang"):
+    if kunci == "cek_tiap":
+        return teks_cek(v)
+    if kunci in ("kedaluwarsa", "garansi", "dipakai", "dibeli", "dibawa", "hilang", "cek_terakhir"):
         return fmt_iso(str(v))
     t = str(v).replace("\n", " ")
     return t if len(t) <= 40 else t[:39] + "…"
@@ -921,7 +924,7 @@ def atur(kunci: str, nilai):
 def pindah_halaman(h: str):
     """Ganti menu sekaligus tutup form/konfirmasi yang masih terbuka."""
     st.session_state.halaman = h
-    for k in ("br_mode", "br_hapus", "sp_hapus", "sp_kosong", "pj_hapus", "pj_mode", "rc_mode", "rc_hapus", "bl_mode", "bm_buang", "db_mode", "hl_mode", "hl_ketemu", "pk_hapus",
+    for k in ("br_mode", "br_hapus", "sp_hapus", "sp_kosong", "pj_hapus", "pj_mode", "rc_mode", "rc_hapus", "bl_mode", "bm_buang", "db_mode", "hl_mode", "hl_ketemu", "pk_hapus", "sc_n",
               "edit_tempat", "hapus_tempat", "edit_kategori", "hapus_kategori",
               "edit_lokasi", "hapus_lokasi", "edit_sub", "hapus_sub"):
         st.session_state.pop(k, None)
@@ -1173,7 +1176,7 @@ def sisa_sampah(s: dict) -> int:
 def teks_cari(b: dict) -> str:
     """Teks yang dicocokkan saat mencari barang, termasuk nama barang induk dan isinya."""
     induk = induk_dari(b)
-    return " ".join([b["nama"], b.get("catatan", ""), nama_tempat(b), nama_kat(b), b.get("pemilik", ""),
+    return " ".join([b["nama"], b.get("catatan", ""), nama_tempat(b), nama_kat(b), b.get("pemilik", ""), b.get("barcode", ""),
                      induk["nama"] if induk else ""] + [b.get(k, "") for k, _ in ATRIBUT]
                     + [x["nama"] for x in isi_dari(b["id"])]).lower()
 
@@ -1380,12 +1383,14 @@ if not cfg_github():
     st.warning("Mode uji coba: data disimpan di file lokal dan bisa hilang saat aplikasi "
                "dimulai ulang. Isi pengaturan GitHub (lihat README) agar data permanen.")
 
-UTAMA = ["Cari barang", "Jelajah lokasi", "Kelola barang", "Pindah massal", "Riwayat perpindahan", "Riwayat aktivitas", "Tempat sampah"]
+UTAMA = ["Cari barang", "Scan barcode", "Jelajah lokasi", "Kelola barang", "Pindah massal", "Riwayat perpindahan", "Riwayat aktivitas",
+         "Ekspor daftar", "Tempat sampah"]
 PANTAU = ["Pinjam-meminjam", "Dibawa dan hilang", "Belanja", "Daftar bawaan", "Jarang dipakai",
-          "Kedaluwarsa dan garansi", "Nilai barang"]
+          "Kedaluwarsa dan garansi", "Pengingat berkala", "Nilai barang"]
 MASTER = ["Tempat", "Lokasi", "Sub lokasi", "Kategori", "Label QR", "Ukuran data", "Titik pulih",
           "Cadangan dan pindah data"]
-HALAMAN = ["Beranda"] + UTAMA + PANTAU + (MASTER if adalah_admin() else [])
+PENGATURAN = ["Tampilan Beranda"] + (MASTER if adalah_admin() else [])
+HALAMAN = ["Beranda"] + UTAMA + PANTAU + PENGATURAN
 if st.session_state.get("halaman") not in HALAMAN:
     st.session_state.halaman = "Beranda"
 halaman = st.session_state.halaman
@@ -1393,7 +1398,8 @@ IKON = {"Beranda": "home", "Cari barang": "search", "Kelola barang": "inventory_
         "Jelajah lokasi": "account_tree", "Pindah massal": "swap_horiz", "Riwayat perpindahan": "history", "Riwayat aktivitas": "manage_history", "Tempat sampah": "delete",
         "Pinjam-meminjam": "handshake", "Dibawa dan hilang": "backpack", "Belanja": "shopping_cart",
         "Daftar bawaan": "luggage", "Jarang dipakai": "schedule",
-        "Kedaluwarsa dan garansi": "event_busy", "Nilai barang": "payments",
+        "Kedaluwarsa dan garansi": "event_busy", "Nilai barang": "payments", "Pengingat berkala": "notifications_active",
+        "Scan barcode": "barcode_scanner", "Ekspor daftar": "file_download", "Tampilan Beranda": "tune",
         "Tempat": "home_work", "Lokasi": "place", "Sub lokasi": "account_tree", "Kategori": "sell",
         "Label QR": "qr_code_2", "Ukuran data": "database", "Titik pulih": "restore",
         "Cadangan dan pindah data": "backup"}
@@ -1419,10 +1425,9 @@ with st.sidebar:
     with st.expander("Pantau", icon=":material/monitoring:", expanded=halaman in PANTAU):
         for h in PANTAU:
             tombol_nav(h)
-    if adalah_admin():
-        with st.expander("Pengaturan", icon=":material/settings:", expanded=halaman in MASTER):
-            for h in MASTER:
-                tombol_nav(h)
+    with st.expander("Pengaturan", icon=":material/settings:", expanded=halaman in PENGATURAN):
+        for h in PENGATURAN:
+            tombol_nav(h)
     st.markdown('<div class="sp"></div>', unsafe_allow_html=True)
     st.toggle("Mode gelap", key="gelap", on_change=atur, args=("tema_ubah", True))
     if st.session_state.pop("tema_ubah", False):
@@ -1459,6 +1464,10 @@ DESKRIPSI = {
     "Jarang dipakai": "Barang yang sudah lama tidak dipakai, untuk bahan membereskan atau melepas barang.",
     "Kedaluwarsa dan garansi": "Pantau tanggal kedaluwarsa dan masa garansi.",
     "Nilai barang": "Total nilai barang berdasarkan harga beli.",
+    "Pengingat berkala": "Barang yang perlu dicek rutin, misalnya baterai cadangan atau alat P3K.",
+    "Scan barcode": "Foto barcode di kemasan untuk menemukan barang, atau menambahkannya dengan nama yang terisi otomatis.",
+    "Ekspor daftar": "Unduh daftar barang sebagai Excel atau PDF yang rapi untuk dicetak.",
+    "Tampilan Beranda": "Pilih kartu mana yang tampil di Beranda. Berlaku untuk perangkat ini.",
     "Tempat": "Tingkat pertama: rumah atau kantor tempat barang disimpan.",
     "Lokasi": "Tingkat kedua: lemari, rak, atau kotak di dalam satu tempat.",
     "Sub lokasi": "Tingkat ketiga: bagian di dalam lokasi, misalnya laci 2 atau rak atas.",
@@ -1466,7 +1475,7 @@ DESKRIPSI = {
     "Label QR": "Cetak label QR untuk ditempel di lemari atau kotak. Dipindai, langsung muncul isinya.",
     "Cadangan dan pindah data": "Unduh cadangan data atau muat data dari berkas.",
 }
-_grup = ("PENGATURAN" if halaman in MASTER else "RINGKASAN" if halaman == "Beranda"
+_grup = ("PENGATURAN" if halaman in PENGATURAN else "RINGKASAN" if halaman == "Beranda"
          else "PANTAU" if halaman in PANTAU else "BARANG")
 st.markdown(f'<div class="kepala"><div><div class="eyebrow">{_grup}</div>'
             f'<div class="judul-hal">{html.escape(halaman)}</div>'
@@ -1494,8 +1503,37 @@ if _tenggat and not st.session_state.get("toast_tenggat"):
     st.session_state.toast_tenggat = True
     st.toast(f"{len(_tenggat)} peminjaman jatuh tempo hari ini", icon="🔔")
 
+# ------------------------------------------------------------ pengingat berkala (pembantu)
+CEK_OPSI = [0, 30, 60, 90, 180, 365]
+
+
+def teks_cek(n) -> str:
+    return {0: "Tidak ada", 30: "Tiap 1 bulan", 60: "Tiap 2 bulan", 90: "Tiap 3 bulan",
+            180: "Tiap 6 bulan", 365: "Tiap 1 tahun"}.get(int(n or 0), f"Tiap {int(n or 0)} hari")
+
+
+def cek_tiap_b(b: dict) -> int:
+    try:
+        return max(int(b.get("cek_tiap", 0) or 0), 0)
+    except Exception:
+        return 0
+
+
+def sisa_cek(b: dict):
+    """Hari menuju jadwal cek berikutnya (negatif = sudah lewat), None kalau tidak ada pengingat."""
+    n = cek_tiap_b(b)
+    if not n:
+        return None
+    ref = iso_ke_date(b.get("cek_terakhir")) or iso_ke_date(b.get("diubah")) or hari_ini()
+    return (ref + timedelta(days=n) - hari_ini()).days
+
+
+def jadwal_cek() -> list:
+    return sorted([(sisa_cek(b), b) for b in D["barang"] if cek_tiap_b(b)], key=lambda x: (x[0], x[1]["nama"].lower()))
+
+
 SEKSI_BERANDA = [("ringkasan", "Ringkasan angka"), ("perhatian", "Perlu perhatian"),
-                 ("dibawa", "Sedang dibawa dan hilang"), ("pinjam", "Sedang dipinjam"),
+                 ("dibawa", "Sedang dibawa dan hilang"), ("cek", "Waktunya dicek (pengingat berkala)"), ("pinjam", "Sedang dipinjam"),
                  ("g_lokasi", "Grafik jenis barang per lokasi"), ("g_kategori", "Grafik jenis barang per kategori")]
 COOKIE_BERANDA = "barang_beranda"
 
@@ -1505,14 +1543,25 @@ def ubah_beranda():
     st.session_state.beranda_ubah = True
 
 
-if halaman == "Beranda":
-    if "beranda_sembunyi" not in st.session_state:       # pilihan terakhir diingat di perangkat ini
+def atur_beranda(sembunyi: list):
+    for k, _ in SEKSI_BERANDA:
+        st.session_state[f"bs_{k}"] = k not in sembunyi
+    ubah_beranda()
+
+
+def muat_beranda_sembunyi():
+    """Pilihan kartu Beranda diingat di perangkat ini lewat cookie."""
+    if "beranda_sembunyi" not in st.session_state:
         try:
-            _ck = st.context.cookies.get(COOKIE_BERANDA, "")
+            ck = st.context.cookies.get(COOKIE_BERANDA, "")
         except Exception:
-            _ck = ""
-        _sah = {k for k, _ in SEKSI_BERANDA}
-        st.session_state.beranda_sembunyi = [k for k in _ck.split(",") if k in _sah]
+            ck = ""
+        sah = {k for k, _ in SEKSI_BERANDA}
+        st.session_state.beranda_sembunyi = [k for k in ck.split(",") if k in sah]
+
+
+if halaman == "Beranda":
+    muat_beranda_sembunyi()
     sembunyi = set(st.session_state.beranda_sembunyi)
     brg = D["barang"]
     if not brg:
@@ -1566,6 +1615,19 @@ if halaman == "Beranda":
                                 f'<span class="lencana lc-r">Hilang</span></div>'
                                 f'<div class="sub">Sejak {fmt_iso(b["hilang"])}{di}</div></div>', unsafe_allow_html=True)
 
+        if "cek" not in sembunyi:
+            with st.container(key="kartu_g_cek"):
+                st.markdown("**Waktunya dicek**")
+                _jt = [(s, b) for s, b in jadwal_cek() if s <= 7]
+                if not _jt:
+                    st.caption("Tidak ada barang yang perlu dicek dalam 7 hari ke depan.")
+                for s, b in _jt[:8]:
+                    st.markdown(f'<div class="perhatian"><div class="brg">{html.escape(b["nama"])}</div>'
+                                f'<div class="sub">{html.escape(nama_tempat(b))} · {teks_cek(b["cek_tiap"]).lower()} · '
+                                f'{status_sisa(s)}</div></div>', unsafe_allow_html=True)
+                if len(_jt) > 8:
+                    st.caption(f"Dan {len(_jt) - 8} barang lain di menu Pengingat berkala.")
+
         if "pinjam" not in sembunyi:
             with st.container(key="kartu_tgl_pinjam"):
                 st.markdown("**Sedang dipinjam**")
@@ -1611,13 +1673,6 @@ if halaman == "Beranda":
                 _grafik[1]()
         elif _grafik:
             _grafik[0]()
-
-    with st.expander("Atur tampilan Beranda", icon=":material/tune:"):
-        st.caption("Pilih kartu yang ingin ditampilkan. Pilihan ini tersimpan di perangkat ini saja.")
-        for _k, _lab in SEKSI_BERANDA:
-            st.checkbox(_lab, value=_k not in sembunyi, key=f"bs_{_k}", on_change=ubah_beranda)
-    if st.session_state.pop("beranda_ubah", False):
-        js_cookie(",".join(st.session_state.beranda_sembunyi) or "-", 31536000, COOKIE_BERANDA)
 
 
 # ---------------------------------------------------------------- cari barang
@@ -1821,7 +1876,7 @@ def form_cepat():
 
 def salin_barang(b: dict) -> dict:
     """Buat salinan barang (tanpa foto, nomor seri, dan tanda pakai), lalu catat sebagai barang baru."""
-    s = {k: v for k, v in b.items() if k not in ("id", "foto", "galeri", "dipakai", "habis", "seri", "dibawa", "dibawa_ke", "hilang", "hilang_di")}
+    s = {k: v for k, v in b.items() if k not in ("id", "foto", "galeri", "dipakai", "habis", "seri", "dibawa", "dibawa_ke", "hilang", "hilang_di", "barcode", "cek_terakhir")}
     s["id"] = uuid.uuid4().hex[:8]
     s["nama"] = f"{b['nama']} (salinan)"
     s["diubah"] = hari_ini().isoformat()
@@ -2101,14 +2156,19 @@ def halaman_barang():
             minimum = st.number_input("Stok minimum", min_value=0, value=minimum_b(b), step=1,
                                       help="Kalau jumlah sudah sampai angka ini atau kurang, barang otomatis "
                                            "masuk daftar Perlu beli. Isi 0 kalau tidak dipantau.")
-            with st.expander("Detail tambahan (merek, ukuran, warna, nomor seri)",
-                             expanded=any(b.get(k) for k, _ in ATRIBUT)):
+            with st.expander("Detail tambahan (merek, ukuran, warna, nomor seri, barcode, cek berkala)",
+                             expanded=any(b.get(k) for k, _ in ATRIBUT) or bool(b.get("barcode") or b.get("cek_tiap"))):
                 a1, a2 = st.columns(2)
                 a3, a4 = st.columns(2)
                 nilai_atr = {}
                 for kol, (kunci, label) in zip((a1, a2, a3, a4), ATRIBUT):
                     nilai_atr[kunci] = kol.text_input(label, value=b.get(kunci, ""), max_chars=60,
                                                       help="Nomor seri berguna untuk klaim garansi." if kunci == "seri" else None)
+                a5, a6 = st.columns(2)
+                barcode_in = a5.text_input("Barcode", value=b.get("barcode", ""), max_chars=40,
+                                           help="Atau pasang lewat menu Scan barcode.")
+                cek_in = a6.selectbox("Cek berkala", CEK_OPSI, index=idx(CEK_OPSI, cek_tiap_b(b)), format_func=teks_cek,
+                                      help="Muncul di Beranda saat sudah waktunya dicek.")
             foto_lama = b.get("foto", "")
             if foto_lama:
                 dat = ambil_foto(foto_lama)
@@ -2176,7 +2236,8 @@ def halaman_barang():
                                "dibeli": tb.isoformat() if tb else "",
                                "kedaluwarsa": kd.isoformat() if kd else "",
                                "garansi": gr.isoformat() if gr else "", "habis": bool(habis),
-                               "minimum": int(minimum), "dalam": induk, "pemilik": pemilik}
+                               "minimum": int(minimum), "dalam": induk, "pemilik": pemilik,
+                               "barcode": barcode_in.strip(), "cek_tiap": int(cek_in)}
                         isi.update({k: v.strip() for k, v in nilai_atr.items()})
                         for kunci, v in isi.items():
                             if v or kunci in ("nama", "lokasi"):
@@ -2185,6 +2246,10 @@ def halaman_barang():
                                 baru.pop(kunci, None)
                         baru["jumlah"] = int(jumlah)
                         baru["diubah"] = hari_ini().isoformat()
+                        if baru.get("cek_tiap"):
+                            baru.setdefault("cek_terakhir", hari_ini().isoformat())
+                        else:
+                            baru.pop("cek_terakhir", None)
                         fotos_hapus = list(hapus_g)
                         if foto_baru:
                             baru["foto"] = foto_baru
@@ -3838,6 +3903,552 @@ def cadangan():
                         selesai_simpan("Data dimuat.")
 
 
+# ------------------------------------------------------------ tampilan Beranda (Pengaturan)
+def halaman_tampilan():
+    muat_beranda_sembunyi()
+    sembunyi = set(st.session_state.beranda_sembunyi)
+    with st.container(key="kartu_barang"):
+        st.markdown("**Kartu yang tampil di Beranda**")
+        st.caption("Centang kartu yang ingin ditampilkan. Pilihan ini tersimpan di perangkat ini saja.")
+        for k, lab in SEKSI_BERANDA:
+            st.checkbox(lab, value=k not in sembunyi, key=f"bs_{k}", on_change=ubah_beranda)
+        c1, c2, c3 = st.columns(3)
+        c1.button("Tampilkan semua", key="bs_semua", on_click=atur_beranda, args=([],), use_container_width=True)
+        c2.button("Hanya ringkasan", key="bs_min", on_click=atur_beranda,
+                  args=([k for k, _ in SEKSI_BERANDA if k != "ringkasan"],), use_container_width=True)
+        c3.button("Lihat Beranda", key="bs_lihat", on_click=pindah_halaman, args=("Beranda",),
+                  type="primary", use_container_width=True)
+    if st.session_state.pop("beranda_ubah", False):
+        js_cookie(",".join(st.session_state.beranda_sembunyi) or "-", 31536000, COOKIE_BERANDA)
+
+
+# ------------------------------------------------------------ pengingat berkala
+def halaman_pengingat():
+    t1, t2 = st.tabs(["Jadwal", "Atur pengingat"])
+    with t1:
+        with st.container(key="kartu_tgl_cek"):
+            jd = jadwal_cek()
+            if not jd:
+                st.info('Belum ada barang yang diberi pengingat. Buka tab "Atur pengingat".')
+            else:
+                f = st.selectbox("Tampilkan", ["Semua", "Sudah waktunya (7 hari ke depan)"], key="pb_f")
+                if f != "Semua":
+                    jd = [x for x in jd if x[0] <= 7]
+                if not jd:
+                    st.caption("Tidak ada barang yang perlu dicek dalam 7 hari ke depan.")
+                else:
+                    lebar = [3.4, 3.2, 2.2, 2.6, 2.2]
+                    kep = st.columns(lebar, vertical_alignment="top")
+                    for kol, judul in zip(kep, ["Barang", "Disimpan di", "Terakhir dicek", "Berikutnya", "Aksi"]):
+                        kol.markdown(f'<div class="thead-s">{judul}</div>', unsafe_allow_html=True)
+                    for s, b in jd:
+                        st.markdown('<div class="garis"></div>', unsafe_allow_html=True)
+                        k = st.columns(lebar, vertical_alignment="center")
+                        k[0].markdown(f'<div class="brg">{html.escape(b["nama"])}</div>', unsafe_allow_html=True)
+                        k[1].write(nama_tempat(b))
+                        k[2].write(fmt_iso(b["cek_terakhir"]) if b.get("cek_terakhir") else "Belum pernah")
+                        k[3].markdown(f'{status_sisa(s)}<div class="sub">{teks_cek(b["cek_tiap"])}</div>',
+                                      unsafe_allow_html=True)
+                        if k[4].button("Sudah dicek", key=f"pb_{b['id']}"):
+                            b["cek_terakhir"] = hari_ini().isoformat()
+                            selesai_simpan(f"{b['nama']} dicatat sudah dicek.")
+    with t2:
+        with st.container(key="kartu_barang"):
+            if not D["barang"]:
+                st.info("Belum ada barang.")
+                return
+            st.caption("Cocok untuk barang yang perlu dicek rutin: baterai cadangan, alat P3K, tabung pemadam, "
+                       "filter air, atau obat yang mendekati kedaluwarsa.")
+            urut = sorted(D["barang"], key=lambda x: x["nama"].lower())
+            with st.form(f"form_pb_{versi()}"):
+                pil = st.multiselect("Barang", [b["id"] for b in urut],
+                                     format_func=lambda i: next(x["nama"] for x in urut if x["id"] == i))
+                n = st.selectbox("Seberapa sering dicek", CEK_OPSI[1:], index=2, format_func=teks_cek)
+                ok = st.form_submit_button("Pasang pengingat", type="primary")
+            if ok:
+                if not pil:
+                    st.error("Pilih minimal satu barang.")
+                else:
+                    peta = {b["id"]: b for b in D["barang"]}
+                    for i in pil:
+                        peta[i]["cek_tiap"] = int(n)
+                        if not peta[i].get("cek_terakhir"):
+                            peta[i]["cek_terakhir"] = hari_ini().isoformat()
+                    selesai_simpan(f"Pengingat dipasang untuk {len(pil)} barang.")
+            ada = [b for _, b in jadwal_cek()]
+            if ada:
+                st.markdown("**Hentikan pengingat**")
+                with st.form(f"form_pb_stop_{versi()}"):
+                    stop = st.multiselect("Barang", [b["id"] for b in ada], key="pb_stop",
+                                          format_func=lambda i: next(x["nama"] for x in ada if x["id"] == i))
+                    oks = st.form_submit_button("Hentikan")
+                if oks and stop:
+                    for b in ada:
+                        if b["id"] in stop:
+                            b.pop("cek_tiap", None)
+                            b.pop("cek_terakhir", None)
+                    selesai_simpan("Pengingat dihentikan.")
+
+
+# ------------------------------------------------------------ scan barcode
+@st.cache_data(show_spinner=False, max_entries=8)
+def baca_barcode(data: bytes):
+    """Daftar kode yang terbaca dari foto. None kalau pustaka pembaca belum terpasang."""
+    try:
+        import cv2
+        import numpy as np
+    except Exception:
+        return None
+    img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+    if img is None:
+        return []
+    sisi = max(img.shape[:2])
+    if sisi > 1600:
+        img = cv2.resize(img, None, fx=1600 / sisi, fy=1600 / sisi, interpolation=cv2.INTER_AREA)
+    kelas = getattr(cv2, "barcode_BarcodeDetector", None) or getattr(getattr(cv2, "barcode", None), "BarcodeDetector", None)
+    bd = kelas() if kelas else None
+
+    def kumpul(res, ke):
+        for x in res:
+            if isinstance(x, str) and x.strip():
+                ke.append(x.strip())
+            elif isinstance(x, (tuple, list)):
+                for y in x:
+                    if isinstance(y, str) and y.strip():
+                        ke.append(y.strip())
+
+    for putar in (None, cv2.ROTATE_90_CLOCKWISE):
+        dasar = img if putar is None else cv2.rotate(img, putar)
+        for skala in (1.0, 0.75, 0.5, 0.35, 0.25, 1.5, 2.0):
+            im = cv2.resize(dasar, None, fx=skala, fy=skala,
+                            interpolation=cv2.INTER_AREA if skala < 1 else cv2.INTER_CUBIC)
+            if min(im.shape[:2]) < 60:
+                continue
+            ketemu = []
+            try:
+                if bd is not None:
+                    kumpul(bd.detectAndDecode(im), ketemu)
+                if not ketemu:
+                    kumpul(cv2.QRCodeDetector().detectAndDecode(im), ketemu)
+            except Exception:
+                continue
+            if ketemu:
+                return list(dict.fromkeys(ketemu))
+    return []
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def cari_produk(kode: str) -> dict:
+    """Nama produk dari basis data terbuka. Melempar galat kalau tidak ada yang bisa dihubungi."""
+    galat = False
+    for host in ("world.openfoodfacts.org", "world.openbeautyfacts.org", "world.openproductsfacts.org"):
+        try:
+            r = requests.get(f"https://{host}/api/v2/product/{kode}.json",
+                             params={"fields": "product_name,brands,quantity"},
+                             headers={"User-Agent": "PelacakBarang/1.0 (pribadi)"}, timeout=6)
+            if r.status_code != 200:
+                continue
+            j = r.json()
+            p = j.get("product", {}) if j.get("status") == 1 else {}
+            nama = (p.get("product_name") or "").strip()
+            if nama:
+                return {"nama": nama, "merek": (p.get("brands") or "").split(",")[0].strip(),
+                        "ukuran": (p.get("quantity") or "").strip()}
+        except Exception:
+            galat = True
+    if galat:
+        raise RuntimeError("tidak terhubung")
+    return {}
+
+
+def form_scan_baru(kode: str, n: int):
+    if not D["lokasi"]:
+        st.info("Buat lokasi dulu di Pengaturan > Lokasi sebelum menambah barang.")
+        return
+    info = {}
+    try:
+        info = cari_produk(kode)
+        if info:
+            st.caption("Nama dan merek diambil dari basis data produk terbuka (Open Food Facts). Periksa dulu, ubah kalau perlu.")
+        else:
+            st.caption("Kode ini belum ada di basis data produk, jadi isi namanya sendiri.")
+    except Exception:
+        st.caption("Basis data produk tidak bisa dihubungi sekarang, jadi isi namanya sendiri.")
+    pl = {l["id"]: nama_lok(l) for l in daftar_lokasi()}
+    if st.session_state.get("cepat_lok") not in pl:
+        st.session_state.cepat_lok = next(iter(pl))
+    lok = st.selectbox("Disimpan di", list(pl), key="cepat_lok", format_func=lambda i: pl[i])
+    with st.form(f"form_scan_{kode}_{versi()}"):
+        nama = st.text_input("Nama barang", value=info.get("nama", ""))
+        a1, a2 = st.columns(2)
+        merek = a1.text_input("Merek", value=info.get("merek", ""))
+        ukuran = a2.text_input("Ukuran", value=info.get("ukuran", ""))
+        jumlah = st.number_input("Jumlah", min_value=0, value=1, step=1)
+        kat = ""
+        if D["kategori"]:
+            pk = {k["id"]: k["nama"] for k in D["kategori"]}
+            ops_k = [""] + list(pk)
+            kat = st.selectbox("Kategori (boleh kosong)", ops_k, format_func=lambda i: TANPA_KAT if not i else pk[i])
+        kirim = st.form_submit_button("Simpan barang", type="primary")
+    if kirim:
+        nama = nama.strip()
+        if not nama:
+            st.error("Nama barang wajib diisi.")
+            return
+        b = {"id": uuid.uuid4().hex[:8], "nama": nama, "lokasi": lok, "jumlah": int(jumlah), "barcode": kode,
+             "diubah": hari_ini().isoformat()}
+        for kunci, v in (("merek", merek), ("ukuran", ukuran), ("kategori", kat)):
+            if v and v.strip():
+                b[kunci] = v.strip()
+        catat(b["id"], nama, "", nama_tempat(b))
+        D["barang"].append(b)
+        selesai_simpan(f"{nama} ditambahkan.", sc_n=n + 1)
+
+
+def halaman_scan():
+    n = st.session_state.get("sc_n", 0)
+    kode, galat = "", ""
+    with st.container(key="kartu_barang"):
+        st.caption("Foto barcode di kemasan barang. Kalau barangnya sudah pernah dicatat, langsung muncul. "
+                   "Kalau belum, kamu bisa menambahkannya dan namanya dicari otomatis.")
+        cara = st.segmented_control("Cara", ["Kamera", "Unggah foto", "Ketik kode"], default="Kamera",
+                                    key="sc_cara", label_visibility="collapsed") or "Kamera"
+        foto = None
+        if cara == "Kamera":
+            foto = st.camera_input("Arahkan kamera ke barcode, dekat dan terang", key=f"sc_cam_{n}")
+        elif cara == "Unggah foto":
+            foto = st.file_uploader("Foto barcode", type=["jpg", "jpeg", "png", "webp"], key=f"sc_up_{n}")
+        else:
+            with st.form(f"form_sc_ketik_{n}"):
+                ketik = st.text_input("Kode barcode", placeholder="Contoh: 8991234567890")
+                st.form_submit_button("Cari kode", type="primary")
+            kode = re.sub(r"\s+", "", ketik or "")
+        if foto is not None:
+            hasil = baca_barcode(foto.getvalue())
+            if hasil is None:
+                galat = "Pembaca barcode belum terpasang. Tambahkan opencv-python-headless ke requirements.txt, atau ketik kodenya."
+            elif not hasil:
+                galat = "Barcode belum terbaca. Dekatkan, pastikan terang dan tegak lurus, atau ketik kodenya."
+            elif len(hasil) == 1:
+                kode = hasil[0]
+            else:
+                kode = st.selectbox("Beberapa kode terbaca, pilih satu", hasil, key=f"sc_pilih_{n}")
+        if galat:
+            st.warning(galat)
+    if not kode:
+        return
+    if not re.fullmatch(r"[A-Za-z0-9\-\.\/\+ ]{3,40}", kode):
+        st.warning("Kode ini tidak terlihat seperti barcode barang.")
+        return
+    with st.container(key="kartu_tgl_scan"):
+        st.markdown(f"**Kode terbaca:** `{kode}`")
+        ada = [b for b in D["barang"] if b.get("barcode") == kode]
+        if ada:
+            st.success(f"Ditemukan {len(ada)} barang dengan kode ini.")
+            for b in ada:
+                st.markdown(kartu_barang_html(b), unsafe_allow_html=True)
+                c1, c2 = st.columns(2)
+                if c1.button("Dipakai hari ini", key=f"sc_pakai_{b['id']}"):
+                    b["dipakai"] = hari_ini().isoformat()
+                    selesai_simpan("Dicatat dipakai hari ini.", sc_n=n + 1)
+                if cek_tiap_b(b) and c2.button("Sudah dicek", key=f"sc_cek_{b['id']}"):
+                    b["cek_terakhir"] = hari_ini().isoformat()
+                    selesai_simpan("Dicatat sudah dicek.", sc_n=n + 1)
+            with st.expander("Tambah barang lain dengan kode ini"):
+                form_scan_baru(kode, n)
+        else:
+            st.info("Belum ada barang dengan kode ini.")
+            form_scan_baru(kode, n)
+            polos = sorted([b for b in D["barang"] if not b.get("barcode")], key=lambda x: x["nama"].lower())
+            if polos:
+                with st.expander("Atau pasang kode ini ke barang yang sudah ada"):
+                    pid = st.selectbox("Barang", [b["id"] for b in polos], key=f"sc_pasang_{n}",
+                                       format_func=lambda i: next(x["nama"] for x in polos if x["id"] == i))
+                    if st.button("Pasang kode", key=f"sc_pasang_go_{n}"):
+                        next(x for x in polos if x["id"] == pid)["barcode"] = kode
+                        selesai_simpan("Kode dipasang.", sc_n=n + 1)
+
+
+# ------------------------------------------------------------ ekspor daftar
+def _status_b(b: dict) -> str:
+    s = []
+    if b.get("hilang"):
+        s.append("Hilang")
+    if b.get("dibawa"):
+        s.append("Sedang dibawa")
+    if perlu_beli(b):
+        s.append("Perlu beli")
+    return ", ".join(s)
+
+
+# kunci: (judul kolom, pengambil nilai, bobot lebar di PDF, angka?)
+KOLOM_EKSPOR = {
+    "nama": ("Nama barang", lambda b: b["nama"], 5, False),
+    "jumlah": ("Jumlah", jumlah_b, 1.5, True),
+    "disimpan": ("Disimpan di", nama_tempat, 4.5, False),
+    "kategori": ("Kategori", nama_kat, 2.6, False),
+    "pemilik": ("Pemilik", lambda b: b.get("pemilik", ""), 2.2, False),
+    "merek": ("Merek", lambda b: b.get("merek", ""), 2.2, False),
+    "ukuran": ("Ukuran", lambda b: b.get("ukuran", ""), 1.8, False),
+    "warna": ("Warna", lambda b: b.get("warna", ""), 1.8, False),
+    "seri": ("Nomor seri", lambda b: b.get("seri", ""), 2.6, False),
+    "barcode": ("Barcode", lambda b: b.get("barcode", ""), 2.8, False),
+    "dibeli": ("Tanggal beli", lambda b: fmt_iso(b.get("dibeli", "")), 2.2, False),
+    "harga": ("Harga beli", lambda b: harga_b(b) or "", 2.4, True),
+    "kedaluwarsa": ("Kedaluwarsa", lambda b: fmt_iso(b.get("kedaluwarsa", "")), 2.2, False),
+    "garansi": ("Garansi sampai", lambda b: fmt_iso(b.get("garansi", "")), 2.2, False),
+    "catatan": ("Catatan", lambda b: b.get("catatan", ""), 5, False),
+    "status": ("Status", _status_b, 2.6, False),
+}
+KOLOM_AWAL = ["nama", "jumlah", "disimpan", "kategori", "catatan"]
+NAMA_GRUP = {"lokasi": "Lokasi", "kategori": "Kategori", "tanpa": "Tanpa pengelompokan"}
+
+
+def _kelompok_b(b: dict, grup: str) -> str:
+    return nama_lokasi(b) if grup == "lokasi" else nama_kat(b) if grup == "kategori" else ""
+
+
+def _judul_kol(k: str, grup: str) -> str:
+    return "Sub lokasi" if (k == "disimpan" and grup == "lokasi") else KOLOM_EKSPOR[k][0]
+
+
+def _nilai_kol(k: str, b: dict, grup: str):
+    """Kalau sudah dikelompokkan menurut lokasi, kolom 'Disimpan di' cukup menampilkan sub lokasinya."""
+    if k == "disimpan" and grup == "lokasi":
+        s = sub_dari(b)
+        return s["nama"] if s else ""
+    return KOLOM_EKSPOR[k][1](b)
+
+
+def _kolom_efektif(kolom: list, grup: str) -> list:
+    sisa = [k for k in kolom if not (grup == "kategori" and k == "kategori")]
+    return sisa or kolom
+
+
+def _urut_ekspor(daftar: list, grup: str) -> list:
+    return sorted(daftar, key=lambda b: (_kelompok_b(b, grup).lower(), b["nama"].lower()))
+
+
+def buat_xlsx(daftar: list, kolom: list, grup: str, cek: bool, judul: str) -> bytes:
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
+    from openpyxl.worksheet.properties import PageSetupProperties
+
+    daftar = _urut_ekspor(daftar, grup)
+    kolom = _kolom_efektif(kolom, grup)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Daftar barang"
+    kepala = ([NAMA_GRUP[grup]] if grup != "tanpa" else []) + [_judul_kol(k, grup) for k in kolom] + (["Dicek"] if cek else [])
+    ws.append(kepala)
+    for b in daftar:
+        baris = ([_kelompok_b(b, grup)] if grup != "tanpa" else []) + [_nilai_kol(k, b, grup) for k in kolom] + ([""] if cek else [])
+        ws.append(baris)
+    tipis = Side(style="thin", color="D9DEE5")
+    garis = Border(left=tipis, right=tipis, top=tipis, bottom=tipis)
+    for c in ws[1]:
+        c.font = Font(bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor="1F5C44")
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        c.border = garis
+    ws.row_dimensions[1].height = 26
+    for i, nm in enumerate(kepala, start=1):
+        angka = nm in ("Jumlah", "Harga beli")
+        lebar = max([len(str(nm))] + [len(str(ws.cell(r, i).value or "")) for r in range(2, ws.max_row + 1)])
+        ws.column_dimensions[get_column_letter(i)].width = max(9, min(lebar + 3, 46 if nm != "Catatan" else 56))
+        for r in range(2, ws.max_row + 1):
+            c = ws.cell(r, i)
+            c.border = garis
+            c.alignment = Alignment(vertical="top", wrap_text=True, horizontal="right" if angka else "left")
+            if nm == "Harga beli" and c.value != "":
+                c.number_format = '"Rp" #,##0'
+            elif nm == "Dicek":
+                c.alignment = Alignment(horizontal="center", vertical="top")
+            if r % 2 == 1:
+                c.fill = PatternFill("solid", fgColor="F6F8F7")
+    ws.freeze_panes = "A2"
+    if ws.max_row > 1:
+        ws.auto_filter.ref = ws.dimensions
+    ws.page_setup.orientation = "landscape"
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True)
+    ws.print_title_rows = "1:1"
+    ws.oddFooter.center.text = "Halaman &P dari &N"
+    ws.oddHeader.left.text = judul
+
+    rs = wb.create_sheet("Ringkasan")
+    rs["A1"] = judul
+    rs["A1"].font = Font(bold=True, size=14)
+    rs["A2"] = f"Dibuat {hari_ini().strftime('%d/%m/%Y')}"
+    rs["A4"], rs["B4"] = "Jenis barang", len(daftar)
+    rs["A5"], rs["B5"] = "Total buah", sum(jumlah_b(b) for b in daftar)
+    nilai = sum(harga_b(b) * max(jumlah_b(b), 0) for b in daftar)
+    if nilai:
+        rs["A6"], rs["B6"] = "Total nilai (harga beli)", nilai
+        rs["B6"].number_format = '"Rp" #,##0'
+    if grup != "tanpa":
+        rs["A8"], rs["B8"], rs["C8"] = NAMA_GRUP[grup], "Jenis", "Buah"
+        for c in rs[8]:
+            c.font = Font(bold=True, color="FFFFFF")
+            c.fill = PatternFill("solid", fgColor="1F5C44")
+        per = {}
+        for b in daftar:
+            g = _kelompok_b(b, grup)
+            per.setdefault(g, [0, 0])
+            per[g][0] += 1
+            per[g][1] += jumlah_b(b)
+        for g, (j, bh) in per.items():
+            rs.append([g, j, bh])
+    rs.column_dimensions["A"].width = 38
+    rs.column_dimensions["B"].width = 18
+    rs.column_dimensions["C"].width = 12
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def buat_pdf(daftar: list, kolom: list, grup: str, cek: bool, judul: str, sub: str) -> bytes:
+    from xml.sax.saxutils import escape
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.pdfgen import canvas as rl_canvas
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    def bersih(t) -> str:
+        return escape(str(t).encode("cp1252", "replace").decode("cp1252"))
+
+    daftar = _urut_ekspor(daftar, grup)
+    kolom = _kolom_efektif(kolom, grup)
+    hijau = colors.HexColor("#1F5C44")
+    ukuran = landscape(A4) if len(kolom) + (1 if cek else 0) >= 6 else A4
+    lebar_total = ukuran[0] - 30 * mm
+    st_sel = ParagraphStyle("sel", fontName="Helvetica", fontSize=8.5, leading=10.5)
+    st_angka = ParagraphStyle("angka", parent=st_sel, alignment=2)
+    st_kep = ParagraphStyle("kep", fontName="Helvetica-Bold", fontSize=8.5, leading=10.5, textColor=colors.white)
+    st_grup = ParagraphStyle("grup", fontName="Helvetica-Bold", fontSize=9.5, leading=12, textColor=hijau)
+
+    bobot = [KOLOM_EKSPOR[k][2] for k in kolom] + ([1.4] if cek else [])
+    lebar = [lebar_total * w / sum(bobot) for w in bobot]
+    kepala = [Paragraph(bersih(_judul_kol(k, grup)), st_kep) for k in kolom] + ([Paragraph("Dicek", st_kep)] if cek else [])
+    baris, gaya, grup_ini, nomor = [kepala], [], None, 0
+    for b in daftar:
+        g = _kelompok_b(b, grup)
+        if grup != "tanpa" and g != grup_ini:
+            grup_ini = g
+            jml = sum(1 for x in daftar if _kelompok_b(x, grup) == g)
+            baris.append([Paragraph(f"{bersih(g)} ({jml} jenis)", st_grup)] + [""] * (len(kepala) - 1))
+            r = len(baris) - 1
+            gaya += [("SPAN", (0, r), (-1, r)), ("BACKGROUND", (0, r), (-1, r), colors.HexColor("#E6F0EB"))]
+            nomor = 0
+        sel = []
+        for k in kolom:
+            v = _nilai_kol(k, b, grup)
+            if k == "harga" and v != "":
+                v = rp(v)
+            sel.append(Paragraph(bersih(v), st_angka if KOLOM_EKSPOR[k][3] else st_sel))
+        if cek:
+            sel.append(Paragraph("[   ]", ParagraphStyle("c", parent=st_sel, alignment=1)))
+        baris.append(sel)
+        nomor += 1
+        if nomor % 2 == 0:
+            gaya.append(("BACKGROUND", (0, len(baris) - 1), (-1, len(baris) - 1), colors.HexColor("#F6F8F7")))
+
+    tabel = Table(baris, colWidths=lebar, repeatRows=1)
+    tabel.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), hijau), ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor("#D9DEE5")),
+        ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4)] + gaya))
+
+    class Bernomor(rl_canvas.Canvas):
+        def __init__(self, *a, **kw):
+            super().__init__(*a, **kw)
+            self._hal = []
+
+        def showPage(self):
+            self._hal.append(dict(self.__dict__))
+            self._startPage()
+
+        def save(self):
+            total = len(self._hal)
+            for h in self._hal:
+                self.__dict__.update(h)
+                self.setFont("Helvetica", 8)
+                self.setFillColor(colors.HexColor("#6B7280"))
+                self.drawRightString(ukuran[0] - 15 * mm, 9 * mm, f"Halaman {self._pageNumber} dari {total}")
+                self.drawString(15 * mm, 9 * mm, bersih(judul).replace("&amp;", "&"))
+                super().showPage()
+            super().save()
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=ukuran, leftMargin=15 * mm, rightMargin=15 * mm,
+                            topMargin=14 * mm, bottomMargin=16 * mm, title=judul)
+    total_buah = sum(jumlah_b(b) for b in daftar)
+    isi = [Paragraph(bersih(judul), ParagraphStyle("j", fontName="Helvetica-Bold", fontSize=16, leading=20, textColor=hijau)),
+           Paragraph(bersih(f"{sub} · {len(daftar)} jenis barang, {total_buah} buah · dibuat {hari_ini().strftime('%d/%m/%Y')}"),
+                     ParagraphStyle("s", fontName="Helvetica", fontSize=9, leading=12, textColor=colors.HexColor("#6B7280"))),
+           Spacer(1, 6 * mm), tabel]
+    doc.build(isi, canvasmaker=Bernomor)
+    return buf.getvalue()
+
+
+def halaman_ekspor():
+    if not D["barang"]:
+        st.info("Belum ada barang.")
+        return
+    with st.container(key="kartu_barang"):
+        pt = {t["id"]: t["nama"] for t in sorted(D["tempat"], key=lambda t: t["nama"].lower())}
+        pk = {k["id"]: k["nama"] for k in sorted(D["kategori"], key=lambda k: k["nama"].lower())}
+        if st.session_state.get("ek_tempat", "semua") not in ["semua"] + list(pt):
+            st.session_state.ek_tempat = "semua"
+        c1, c2 = st.columns(2)
+        f_tem = c1.selectbox("Tempat", ["semua"] + list(pt), key="ek_tempat",
+                             format_func=lambda i: "Semua tempat" if i == "semua" else pt[i])
+        f_kat = c2.multiselect("Kategori (kosong = semua)", list(pk), key="ek_kat", format_func=lambda i: pk[i])
+        grup = st.selectbox("Kelompokkan menurut", list(NAMA_GRUP), key="ek_grup", format_func=NAMA_GRUP.get)
+        kolom = st.multiselect("Kolom yang disertakan", list(KOLOM_EKSPOR), default=KOLOM_AWAL, key="ek_kolom",
+                               format_func=lambda k: KOLOM_EKSPOR[k][0])
+        cek = st.checkbox("Tambah kolom kotak centang untuk dicentang tangan setelah dicetak", key="ek_cek")
+        daftar = [b for b in D["barang"]
+                  if (f_tem == "semua" or (lokasi_dari(b) or {}).get("tempat") == f_tem)
+                  and (not f_kat or b.get("kategori") in f_kat)]
+        st.caption(f"{len(daftar)} jenis barang akan diekspor.")
+        if not daftar:
+            st.info("Tidak ada barang yang cocok dengan pilihan ini.")
+            return
+        if not kolom:
+            st.warning("Pilih minimal satu kolom.")
+            return
+        kolom = [k for k in KOLOM_EKSPOR if k in kolom]      # urutan tetap seperti daftar kolom
+        judul = "Daftar Barang" + (f" - {pt[f_tem]}" if f_tem != "semua" else "")
+        sub = ", ".join(pk[i] for i in f_kat) if f_kat else "Semua kategori"
+        sig = repr((f_tem, tuple(f_kat), grup, tuple(kolom), cek, versi()))
+        b1, b2 = st.columns(2)
+        try:
+            if b1.button("Buat file Excel", key="ek_bx", type="primary", use_container_width=True):
+                st.session_state.ek_xlsx = (sig, buat_xlsx(daftar, kolom, grup, cek, judul))
+            if b2.button("Buat file PDF", key="ek_bp", type="primary", use_container_width=True):
+                st.session_state.ek_pdf = (sig, buat_pdf(daftar, kolom, grup, cek, judul, sub))
+        except ImportError as e:
+            st.error(f"Pustaka belum terpasang ({e.name}). Tambahkan openpyxl dan reportlab ke requirements.txt.")
+        tgl = hari_ini().isoformat()
+        for kunci, label, nama_file, mime in (
+                ("ek_xlsx", "Unduh Excel", f"daftar-barang-{tgl}.xlsx",
+                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+                ("ek_pdf", "Unduh PDF", f"daftar-barang-{tgl}.pdf", "application/pdf")):
+            v = st.session_state.get(kunci)
+            if v and v[0] == sig:
+                st.download_button(label, v[1], file_name=nama_file, mime=mime, key=f"dl_{kunci}",
+                                   icon=":material/download:", use_container_width=True)
+            elif v:
+                st.caption(f"Pilihan berubah, buat ulang file {label.split()[-1]}.")
+
+
 if halaman == "Kelola barang":
     halaman_barang()
 if halaman == "Pindah massal":
@@ -3860,6 +4471,14 @@ if halaman == "Kedaluwarsa dan garansi":
     halaman_tanggal()
 if halaman == "Nilai barang":
     halaman_nilai()
+if halaman == "Pengingat berkala":
+    halaman_pengingat()
+if halaman == "Scan barcode":
+    halaman_scan()
+if halaman == "Ekspor daftar":
+    halaman_ekspor()
+if halaman == "Tampilan Beranda":
+    halaman_tampilan()
 if halaman == "Daftar bawaan":
     halaman_paket()
 if halaman == "Jarang dipakai":

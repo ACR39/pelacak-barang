@@ -3,3 +3,6 @@ pandas
 requests
 pillow
 segno
+openpyxl
+reportlab
+opencv-python-headless>=4.8
