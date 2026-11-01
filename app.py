@@ -118,12 +118,12 @@ st.markdown("""
 }
 /* Di HP tabel tidak ditumpuk ke bawah, tapi dilebarkan dan bisa digeser ke samping */
 @media (max-width:640px){
-  .st-key-kartu_tabel,.st-key-kartu_barang,[class*="st-key-kartu_tgl"]{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_g_rencana,[class*="st-key-kartu_tgl"]{overflow-x:auto;-webkit-overflow-scrolling:touch}
   [data-testid="stHorizontalBlock"]:has(.brg),[data-testid="stHorizontalBlock"]:has(.thead-s){flex-wrap:nowrap !important;min-width:780px}
   [data-testid="stHorizontalBlock"]:has(.brg) > [data-testid="stColumn"],[data-testid="stHorizontalBlock"]:has(.thead-s) > [data-testid="stColumn"]{min-width:0 !important;width:auto !important}
   [data-testid="stHorizontalBlock"]:has(.brg) [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important;min-width:0 !important}
   [data-testid="stHorizontalBlock"]:has(.brg) [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]{min-width:0 !important;width:auto !important}
-  .st-key-kartu_tabel .garis,.st-key-kartu_barang .garis,[class*="st-key-kartu_tgl"] .garis{min-width:780px}
+  .st-key-kartu_tabel .garis,.st-key-kartu_barang .garis,.st-key-kartu_g_rencana .garis,[class*="st-key-kartu_tgl"] .garis{min-width:780px}
 }
 /* Tampilan kartu barang */
 [class*="st-key-item_"]{background:#fff;border:1px solid #e3e7ee;border-radius:14px;padding:.8rem 1rem;
@@ -167,6 +167,8 @@ st.markdown("""
 .st-key-baris_cari [data-testid="stColumn"]:last-child,[class*="st-key-item_"] [data-testid="stColumn"]{min-width:0 !important;flex:0 0 auto !important;width:auto !important}
 .st-key-baris_cari button,[class*="st-key-item_"] button{white-space:nowrap}
 .st-key-baris_cari button p,[class*="st-key-item_"] button p{white-space:nowrap}
+[class*="st-key-item_b_"] [data-testid="stHorizontalBlock"]{flex-wrap:wrap !important;gap:.5rem !important}
+[class*="st-key-item_b_"] [data-testid="stColumn"]{flex:1 1 130px !important;width:auto !important;min-width:130px !important}
 </style>
 """, unsafe_allow_html=True)
 
@@ -736,7 +738,7 @@ def atur(kunci: str, nilai):
 def pindah_halaman(h: str):
     """Ganti menu sekaligus tutup form/konfirmasi yang masih terbuka."""
     st.session_state.halaman = h
-    for k in ("br_mode", "br_hapus", "sp_hapus", "sp_kosong", "pj_hapus", "pj_mode", "rc_mode", "rc_hapus", "pk_hapus",
+    for k in ("br_mode", "br_hapus", "sp_hapus", "sp_kosong", "pj_hapus", "pj_mode", "rc_mode", "rc_hapus", "bl_mode", "pk_hapus",
               "edit_tempat", "hapus_tempat", "edit_kategori", "hapus_kategori",
               "edit_lokasi", "hapus_lokasi", "edit_sub", "hapus_sub"):
         st.session_state.pop(k, None)
@@ -1109,7 +1111,7 @@ if not cfg_github():
                "dimulai ulang. Isi pengaturan GitHub (lihat README) agar data permanen.")
 
 UTAMA = ["Cari barang", "Kelola barang", "Pindah massal", "Riwayat perpindahan", "Tempat sampah"]
-PANTAU = ["Pinjam-meminjam", "Perlu beli", "Rencana beli", "Daftar bawaan", "Jarang dipakai",
+PANTAU = ["Pinjam-meminjam", "Belanja", "Daftar bawaan", "Jarang dipakai",
           "Kedaluwarsa dan garansi", "Nilai barang"]
 MASTER = ["Tempat", "Lokasi", "Sub lokasi", "Kategori", "Label QR", "Cadangan dan pindah data"]
 HALAMAN = ["Beranda"] + UTAMA + PANTAU + (MASTER if adalah_admin() else [])
@@ -1118,7 +1120,7 @@ if st.session_state.get("halaman") not in HALAMAN:
 halaman = st.session_state.halaman
 IKON = {"Beranda": "home", "Cari barang": "search", "Kelola barang": "inventory_2",
         "Pindah massal": "swap_horiz", "Riwayat perpindahan": "history", "Tempat sampah": "delete",
-        "Pinjam-meminjam": "handshake", "Perlu beli": "shopping_cart", "Rencana beli": "checklist",
+        "Pinjam-meminjam": "handshake", "Belanja": "shopping_cart",
         "Daftar bawaan": "luggage", "Jarang dipakai": "schedule",
         "Kedaluwarsa dan garansi": "event_busy", "Nilai barang": "payments",
         "Tempat": "home_work", "Lokasi": "place", "Sub lokasi": "account_tree", "Kategori": "sell",
@@ -1175,8 +1177,7 @@ DESKRIPSI = {
     "Riwayat perpindahan": "Catatan otomatis kapan dan dari mana ke mana barang dipindah.",
     "Tempat sampah": "Barang yang dibuang disimpan 30 hari di sini, bisa dipulihkan sebelum hilang permanen.",
     "Pinjam-meminjam": "Catat barang yang kamu pinjamkan atau yang kamu pinjam, lengkap dengan tenggatnya.",
-    "Perlu beli": "Barang yang habis atau stoknya sudah di batas minimum, jadi daftar belanja.",
-    "Rencana beli": "Daftar barang baru yang ingin dibeli, lengkap dengan prioritas dan perkiraan harga.",
+    "Belanja": "Stok menipis atau habis (otomatis) dan rencana barang baru yang ingin dibeli, dalam satu daftar belanja.",
     "Daftar bawaan": "Daftar barang untuk dibawa (liburan, pindahan, dll.) yang bisa dicentang satu per satu.",
     "Jarang dipakai": "Barang yang sudah lama tidak dipakai, untuk bahan membereskan atau melepas barang.",
     "Kedaluwarsa dan garansi": "Pantau tanggal kedaluwarsa dan masa garansi.",
@@ -1901,42 +1902,44 @@ def halaman_beli():
     perlu = sorted([b for b in D["barang"] if perlu_beli(b)], key=lambda x: x["nama"].lower())
     lain = sorted([b for b in D["barang"] if not perlu_beli(b)], key=lambda x: x["nama"].lower())
     with st.container(key="kartu_barang"):
-        if lain:
+        if st.session_state.get("bl_mode") and lain:
+            st.markdown("#### Tandai barang yang habis")
             with st.form(f"form_beli_{versi()}"):
-                pilih = st.selectbox("Tandai barang yang habis", [b["id"] for b in lain],
+                pilih = st.selectbox("Barang", [b["id"] for b in lain],
                                      format_func=lambda i: f'{by_id[i]["nama"]} ({nama_tempat(by_id[i])})')
-                kirim = st.form_submit_button("Tandai perlu beli", type="primary")
+                t1, t2, _ = st.columns([1.6, 1, 2])
+                kirim = t1.form_submit_button("Tandai perlu beli", type="primary")
+                kembali = t2.form_submit_button("Kembali")
+            if kembali:
+                st.session_state.bl_mode = False
+                st.rerun()
             if kirim:
                 by_id[pilih]["habis"] = True
                 by_id[pilih]["diubah"] = hari_ini().isoformat()
-                selesai_simpan("Ditandai perlu beli.")
-        st.markdown(f"#### Daftar belanja ({len(perlu)})")
+                selesai_simpan("Ditandai perlu beli.", bl_mode=False)
+            return
+        if lain:
+            st.button("Tandai habis", type="primary", key="bl_tambah", icon=":material/add:",
+                      on_click=atur, args=("bl_mode", True),
+                      help="Tandai barang yang sudah habis supaya masuk daftar belanja")
+        st.markdown(f"#### Stok menipis atau habis ({len(perlu)})")
         if not perlu:
             st.caption("Tidak ada barang yang perlu dibeli.")
             return
-        lebar = [3.6, 3, 2, 1.5, 1.6, 2.2]
-        kep = st.columns(lebar, vertical_alignment="top")
-        for kol, judul in zip(kep, ["Barang", "Disimpan di", "Harga terakhir", "Stok", "Beli", "Aksi"]):
-            kol.markdown(f'<div class="thead-s">{judul}</div>', unsafe_allow_html=True)
         total = 0
         for b in perlu:
-            st.markdown('<div class="garis"></div>', unsafe_allow_html=True)
-            k = st.columns(lebar, vertical_alignment="center")
-            k[0].markdown(f'<div class="brg">{html.escape(b["nama"])}{lencana(b)}</div>', unsafe_allow_html=True)
-            k[1].write(nama_tempat(b))
-            h = harga_b(b)
-            k[2].write(rp(h) if h else "—")
             m = minimum_b(b)
-            k[3].write(f"{jumlah_b(b)} (min {m})" if m else f"{jumlah_b(b)}")
-            n_beli = int(k[4].number_input("Jumlah beli", min_value=1, step=1, key=f"bl_n_{b['id']}",
-                                           value=max(m - jumlah_b(b) + 1, 1) if m else 1,
-                                           label_visibility="collapsed"))
-            total += h * n_beli
-            if k[5].button("Sudah dibeli", key=f"bl_{b['id']}"):
-                b.pop("habis", None)
-                b["jumlah"] = jumlah_b(b) + n_beli
-                b["diubah"] = hari_ini().isoformat()
-                selesai_simpan("Stok ditambah dan dicoret dari daftar belanja.")
+            with st.container(key=f"item_b_{b['id']}"):
+                st.markdown(kartu_barang_html(b), unsafe_allow_html=True)
+                c1, c2 = st.columns([1, 1.6], vertical_alignment="bottom")
+                n_beli = int(c1.number_input("Jumlah beli", min_value=1, step=1, key=f"bl_n_{b['id']}",
+                                             value=max(m - jumlah_b(b) + 1, 1) if m else 1))
+                total += harga_b(b) * n_beli
+                if c2.button("Sudah dibeli", key=f"kpakai_bl_{b['id']}", use_container_width=True):
+                    b.pop("habis", None)
+                    b["jumlah"] = jumlah_b(b) + n_beli
+                    b["diubah"] = hari_ini().isoformat()
+                    selesai_simpan("Stok ditambah dan dicoret dari daftar belanja.")
         st.caption(f"Perkiraan total: {rp(total)} (harga beli terakhir × jumlah yang dibeli).")
         teks = "\n".join(f"- {b['nama']} ({nama_tempat(b)})" + (f" ± {rp(harga_b(b))}" if harga_b(b) else "")
                          for b in perlu)
@@ -1984,7 +1987,7 @@ def halaman_rencana():
     e = next((x for x in aktif if x["id"] == mode), {})
     if mode not in (None, "baru") and not e:
         mode = None
-    with st.container(key="kartu_barang"):
+    with st.container(key="kartu_g_rencana"):
         if mode:
             st.markdown("#### Ubah rencana" if e else "#### Tambah rencana")
             with st.form(f"form_rc_{e.get('id', 'baru')}_{versi()}"):
@@ -2087,6 +2090,16 @@ def halaman_rencana():
                 k[1].write(fmt_iso(x.get("dibeli", "")))
                 k[2].button("🗑️", key=f"rchapus2_{x['id']}", help="Hapus", on_click=atur, args=("rc_hapus", x["id"]))
                 _hapus_rencana(x)
+
+
+# -------------------------------------------------------------------- belanja
+def halaman_belanja():
+    """Satu menu belanja: stok yang menipis (otomatis) dan rencana barang baru."""
+    t1, t2 = st.tabs(["Stok menipis", "Barang baru"])
+    with t1:
+        halaman_beli()
+    with t2:
+        halaman_rencana()
 
 
 # -------------------------------------------------------------- daftar bawaan
@@ -2679,14 +2692,12 @@ if halaman == "Tempat sampah":
     halaman_sampah()
 if halaman == "Pinjam-meminjam":
     halaman_pinjam()
-if halaman == "Perlu beli":
-    halaman_beli()
+if halaman == "Belanja":
+    halaman_belanja()
 if halaman == "Kedaluwarsa dan garansi":
     halaman_tanggal()
 if halaman == "Nilai barang":
     halaman_nilai()
-if halaman == "Rencana beli":
-    halaman_rencana()
 if halaman == "Daftar bawaan":
     halaman_paket()
 if halaman == "Jarang dipakai":
