@@ -215,16 +215,22 @@ CSS_GELAP = """
   background:#1e293b;border-color:#334155;color:#e5e7eb}
 [data-testid="stMain"] button[kind="secondary"] p,[data-testid="stMain"] button[kind="secondaryFormSubmit"] p,[data-testid="stMain"] [data-testid="stDownloadButton"] button p{color:inherit !important}
 [data-testid="stMain"] button[kind="primary"] p,[data-testid="stMain"] button[kind="primaryFormSubmit"] p{color:#fff !important}
-[data-baseweb="input"],[data-baseweb="base-input"],[data-baseweb="textarea"],[data-baseweb="select"] > div,[data-testid="stDateInputField"],
-[data-testid="stNumberInputContainer"],[data-testid="stFileUploaderDropzone"],[data-testid="stCameraInput"],
-[data-testid="stTextInputRootElement"],[data-testid="stTextAreaRootElement"]{background:#0f1722 !important;border-color:#334155 !important}
-[data-baseweb="input"] input,[data-baseweb="base-input"] input,textarea,[data-baseweb="select"] div,[data-testid="stNumberInputContainer"] input{color:#e5e7eb !important;-webkit-text-fill-color:#e5e7eb}
-[data-baseweb="input"] svg,[data-baseweb="select"] svg,[data-testid="stFileUploaderDropzone"] svg{fill:#94a3b8 !important}
-[data-baseweb="popover"] > div,[data-baseweb="popover"] ul,[data-baseweb="menu"],[role="listbox"]{background:#172131 !important;color:#e5e7eb !important}
-[data-baseweb="popover"] li{color:#e5e7eb !important}
-[data-baseweb="popover"] li:hover,[data-baseweb="popover"] li[aria-selected="true"]{background:#24324a !important}
-[data-baseweb="tag"]{background:#24324a !important}
-[data-baseweb="tag"] span{color:#e5e7eb !important}
+[data-testid="stSelectbox"] [role="group"],[data-testid="stMultiSelect"] [role="group"],[data-testid="stDateInput"] [role="group"],
+[data-testid="stDateInputField"],[data-testid="stNumberInputContainer"],[data-testid="stTextInputRootElement"],[data-testid="stTextAreaRootElement"],
+[data-testid="stFileUploaderDropzone"],[data-testid="stCameraInput"]{background:#0f1722 !important;border-color:#334155 !important}
+[data-testid="stSelectbox"] [role="group"] *,[data-testid="stMultiSelect"] [role="group"] *,[data-testid="stDateInput"] [role="group"] *,
+[data-testid="stNumberInputContainer"] *,[data-testid="stTextInputRootElement"] input,[data-testid="stTextAreaRootElement"] textarea,
+[data-testid="stTextInputField"],[data-testid="stFileUploaderDropzone"] *{color:#e5e7eb !important;-webkit-text-fill-color:#e5e7eb !important}
+[data-testid="stSelectbox"] [role="group"] svg,[data-testid="stMultiSelect"] [role="group"] svg,[data-testid="stDateInput"] svg,
+[data-testid="stTextInputIcon"] svg,[data-testid="stFileUploaderDropzone"] svg{fill:#94a3b8 !important;color:#94a3b8 !important}
+input::placeholder,textarea::placeholder{color:#94a3b8 !important;-webkit-text-fill-color:#94a3b8 !important;opacity:1 !important}
+[data-testid="stNumberInputContainer"] button{background:#1e293b !important}
+/* daftar pilihan (dropdown) tampil di luar halaman utama, lewat portal */
+[data-testid="stSelectboxVirtualDropdown"],[data-testid="stSelectboxVirtualDropdown"] [role="listbox"],
+[data-testid="portal"] [role="listbox"],[data-testid="portal"] ul{background:#172131 !important}
+[role="listbox"] [role="option"],[role="listbox"] [role="option"] *,[data-testid="portal"] li,[data-testid="portal"] li *{color:#e5e7eb !important;-webkit-text-fill-color:#e5e7eb !important}
+[role="listbox"] [role="option"]:hover,[role="listbox"] [role="option"][aria-selected="true"],[role="listbox"] [role="option"][data-focused="true"]{background:#24324a !important}
+[data-testid="stMultiSelect"] [data-testid="stTag"],[data-testid="stMultiSelect"] [role="row"] > div{background:#24324a !important}
 [data-testid="stButtonGroup"] button[aria-checked="false"]{background:#0f1722 !important;color:#e5e7eb !important;border-color:#334155 !important}
 [data-testid="stButtonGroup"] button p{color:inherit !important}
 [data-testid="stAlertContainer"]{background:rgba(148,163,184,.14) !important;color:#e5e7eb !important}
