@@ -3280,6 +3280,22 @@ def halaman_paket():
                 for it in isi:
                     it["siap"] = False
                 selesai_simpan("Semua centang dihapus.")
+        terkait = [by_id[i["barang"]] for i in isi if i.get("barang") in by_id and not by_id[i["barang"]].get("hilang")]
+        if terkait:
+            sedang = [b for b in terkait if b.get("dibawa")]
+            with st.expander(f"Bawa barang di daftar ini ({len(sedang)} dari {len(terkait)} sedang dibawa)"):
+                ke = st.text_input("Dibawa ke mana? (boleh kosong)", value=p["nama"], key=f"pk_ke_{p['id']}_{versi()}")
+                c1, c2 = st.columns(2)
+                if c1.button("Bawa semua", type="primary", key="pk_bawa"):
+                    for b in terkait:
+                        if not b.get("dibawa"):
+                            tandai_dibawa(b, ke.strip())
+                    selesai_simpan(f"{len(terkait)} barang ditandai sedang dibawa.")
+                if c2.button("Kembalikan semua", key="pk_balik", disabled=not sedang):
+                    for b in sedang:
+                        kembalikan_dibawa(b)
+                    selesai_simpan("Semua barang di daftar ini sudah dikembalikan.")
+                st.caption("Hanya barang yang tertaut ke daftar barang. Item yang diketik manual dilewati.")
         with st.expander("Tambah barang ke daftar"):
             with st.form(f"form_pk_item_{p['id']}_{versi()}"):
                 urut = [b["id"] for b in sorted(D["barang"], key=lambda x: x["nama"].lower())]
