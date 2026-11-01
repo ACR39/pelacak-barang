@@ -3260,30 +3260,40 @@ def halaman_paket():
             return
         p = next(x for x in D["paket"] if x["id"] == pid)
         isi = p.setdefault("isi", [])
-        if not isi:
-            st.caption("Daftar ini masih kosong. Tambahkan barang lewat bagian di bawah.")
         slot = st.empty()
-        centang = {}
-        for it in isi:
-            kb = by_id.get(it.get("barang"))
-            label = f"{it['nama']} ×{it.get('jumlah', 1)}" + (f" — {nama_tempat(kb)}" if kb else "")
-            centang[it["id"]] = st.checkbox(label, value=bool(it.get("siap")), key=f"pkc_{it['id']}_{versi()}")
-        if isi:
-            siap = sum(1 for v in centang.values() if v)
-            slot.progress(siap / len(isi), text=f"{siap} dari {len(isi)} sudah disiapkan")
-            b1, b2 = st.columns(2)
-            if b1.button("Simpan centang", type="primary", key="pk_simpan"):
-                for it in isi:
-                    it["siap"] = bool(centang[it["id"]])
-                selesai_simpan("Centang disimpan.")
-            if b2.button("Hapus semua centang", key="pk_reset"):
-                for it in isi:
-                    it["siap"] = False
-                selesai_simpan("Semua centang dihapus.")
-        terkait = [by_id[i["barang"]] for i in isi if i.get("barang") in by_id and not by_id[i["barang"]].get("hilang")]
-        if terkait:
-            sedang = [b for b in terkait if b.get("dibawa")]
-            with st.expander(f"Bawa barang di daftar ini ({len(sedang)} dari {len(terkait)} sedang dibawa)"):
+        t_siap, t_bawa, t_isi, t_atur = st.tabs(["Siapkan", "Bawa", "Isi daftar", "Atur"])
+
+        with t_siap:
+            if not isi:
+                st.info('Daftar ini masih kosong. Buka tab "Isi daftar" untuk menambah barang.')
+            else:
+                st.caption("Centang barang yang sudah masuk tas, lalu tekan Simpan.")
+            centang = {}
+            for it in isi:
+                kb = by_id.get(it.get("barang"))
+                label = f"{it['nama']} ×{it.get('jumlah', 1)}" + (f" — {nama_tempat(kb)}" if kb else "")
+                centang[it["id"]] = st.checkbox(label, value=bool(it.get("siap")), key=f"pkc_{it['id']}_{versi()}")
+            if isi:
+                siap = sum(1 for v in centang.values() if v)
+                slot.progress(siap / len(isi), text=f"{siap} dari {len(isi)} sudah disiapkan")
+                b1, b2 = st.columns(2)
+                if b1.button("Simpan centang", type="primary", key="pk_simpan"):
+                    for it in isi:
+                        it["siap"] = bool(centang[it["id"]])
+                    selesai_simpan("Centang disimpan.")
+                if b2.button("Hapus semua centang", key="pk_reset"):
+                    for it in isi:
+                        it["siap"] = False
+                    selesai_simpan("Semua centang dihapus.")
+
+        with t_bawa:
+            terkait = [by_id[i["barang"]] for i in isi if i.get("barang") in by_id and not by_id[i["barang"]].get("hilang")]
+            if not terkait:
+                st.info("Belum ada barang dari daftar barang di sini. Tambahkan lewat tab \"Isi daftar\".")
+            else:
+                sedang = [b for b in terkait if b.get("dibawa")]
+                st.caption(f"{len(sedang)} dari {len(terkait)} barang sedang dibawa. "
+                           "Barang akan ditandai \"Sedang dibawa\" di menu Dibawa dan hilang.")
                 ke = st.text_input("Dibawa ke mana? (boleh kosong)", value=p["nama"], key=f"pk_ke_{p['id']}_{versi()}")
                 c1, c2 = st.columns(2)
                 if c1.button("Bawa semua", type="primary", key="pk_bawa"):
@@ -3295,11 +3305,13 @@ def halaman_paket():
                     for b in sedang:
                         kembalikan_dibawa(b)
                     selesai_simpan("Semua barang di daftar ini sudah dikembalikan.")
-                st.caption("Hanya barang yang tertaut ke daftar barang. Item yang diketik manual dilewati.")
-        with st.expander("Tambah barang ke daftar"):
+                if len(terkait) < len(isi):
+                    st.caption("Item yang diketik manual atau sedang hilang dilewati.")
+
+        with t_isi:
             with st.form(f"form_pk_item_{p['id']}_{versi()}"):
                 urut = [b["id"] for b in sorted(D["barang"], key=lambda x: x["nama"].lower())]
-                pil = st.multiselect("Dari daftar barang", urut,
+                pil = st.multiselect("Pilih dari daftar barang", urut,
                                      format_func=lambda i: f'{by_id[i]["nama"]} ({nama_tempat(by_id[i])})')
                 manual = st.text_input("Atau ketik nama barang (boleh kosong)")
                 jml = st.number_input("Jumlah (untuk barang yang diketik)", min_value=1, value=1, step=1)
@@ -3318,8 +3330,8 @@ def halaman_paket():
                     st.error("Pilih barang atau ketik namanya dulu.")
                 else:
                     selesai_simpan("Ditambahkan ke daftar.")
-        if isi:
-            with st.expander("Hapus barang dari daftar"):
+            if isi:
+                st.markdown("**Hapus dari daftar**")
                 with st.form(f"form_pk_hapus_{p['id']}_{versi()}"):
                     peta = {i["id"]: i["nama"] for i in isi}
                     hp = st.multiselect("Pilih yang dihapus", list(peta), format_func=lambda i: peta[i])
@@ -3327,15 +3339,18 @@ def halaman_paket():
                 if hapus and hp:
                     p["isi"] = [i for i in isi if i["id"] not in hp]
                     selesai_simpan("Dihapus dari daftar.")
-        if st.session_state.get("pk_hapus") == p["id"]:
-            st.warning(f"Hapus daftar {p['nama']}?")
-            y, n, _ = st.columns([1, 1, 3])
-            if y.button("Ya, hapus", type="primary", key="pk_ya"):
-                D["paket"] = [x for x in D["paket"] if x["id"] != p["id"]]
-                selesai_simpan("Daftar dihapus.", pk_hapus=None)
-            n.button("Batal", key="pk_bt", on_click=atur, args=("pk_hapus", None))
-        else:
-            st.button("Hapus daftar ini", key="pk_hp", on_click=atur, args=("pk_hapus", p["id"]))
+
+        with t_atur:
+            if st.session_state.get("pk_hapus") == p["id"]:
+                st.warning(f"Hapus daftar {p['nama']}?")
+                y, n, _ = st.columns([1, 1, 3])
+                if y.button("Ya, hapus", type="primary", key="pk_ya"):
+                    D["paket"] = [x for x in D["paket"] if x["id"] != p["id"]]
+                    selesai_simpan("Daftar dihapus.", pk_hapus=None)
+                n.button("Batal", key="pk_bt", on_click=atur, args=("pk_hapus", None))
+            else:
+                st.caption("Menghapus daftar tidak menghapus barangnya.")
+                st.button("Hapus daftar ini", key="pk_hp", on_click=atur, args=("pk_hapus", p["id"]))
 
 
 # -------------------------------------------------------------- jarang dipakai
