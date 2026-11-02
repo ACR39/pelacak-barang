@@ -1382,8 +1382,39 @@ def html_nama_foto(x: dict) -> str:
     return f'<div style="padding:.3rem 0">{nama}</div>'
 
 
+SEKSI_KARTU = [("lokasi", "Lokasi"), ("kategori", "Kategori"), ("harga", "Harga beli"),
+               ("jumlah", "Jumlah (angka besar di kanan)"), ("tanggal", "Tanggal (dibeli, kedaluwarsa, garansi, dipakai, diinventarisasi)"),
+               ("pemilik", "Pemilik"), ("atribut", "Merek, ukuran, warna, nomor seri"),
+               ("hubungan", "Di dalam atau berisi barang lain"), ("catatan", "Catatan"), ("tautan", "Tautan"), ("label", "Label")]
+COOKIE_KARTU = "barang_kartu"
+
+
+def muat_kartu_sembunyi() -> set:
+    """Bagian kartu barang yang disembunyikan. Pilihan diingat di perangkat ini lewat cookie."""
+    if "kartu_sembunyi" not in st.session_state:
+        try:
+            ck = st.context.cookies.get(COOKIE_KARTU, "")
+        except Exception:
+            ck = ""
+        sah = {k for k, _ in SEKSI_KARTU}
+        st.session_state.kartu_sembunyi = [k for k in ck.split(",") if k in sah]
+    return set(st.session_state.kartu_sembunyi)
+
+
+def ubah_kartu():
+    st.session_state.kartu_sembunyi = [k for k, _ in SEKSI_KARTU if not st.session_state.get(f"ks_{k}", True)]
+    st.session_state.kartu_ubah = True
+
+
+def atur_kartu(sembunyi: list):
+    for k, _ in SEKSI_KARTU:
+        st.session_state[f"ks_{k}"] = k not in sembunyi
+    ubah_kartu()
+
+
 def kartu_barang_html(b: dict, foto: bool = True) -> str:
     """Satu kartu barang: ikon/foto bulat, nama, keterangan, jumlah besar di kanan."""
+    sb = muat_kartu_sembunyi()
     ic = html.escape((b["nama"].strip()[:1] or "?").upper())
     if foto and b.get("foto"):
         dat = ambil_foto(b["foto"])
@@ -1392,21 +1423,21 @@ def kartu_barang_html(b: dict, foto: bool = True) -> str:
                 ic = f'<img src="{_uri_bulat(b["foto"], dat)}" alt="">'
             except Exception:
                 pass
-    meta = [nama_tempat(b)]
-    if b.get("kategori"):
+    meta = [nama_tempat(b)] if "lokasi" not in sb else []
+    if b.get("kategori") and "kategori" not in sb:
         meta.append(nama_kat(b))
-    if harga_b(b):
+    if harga_b(b) and "harga" not in sb:
         meta.append("Rp " + f"{harga_b(b):,}".replace(",", "."))
     ekstra = []
-    if b.get("dibeli"):
+    if b.get("dibeli") and "tanggal" not in sb:
         ekstra.append(f"Dibeli: {fmt_iso(b['dibeli'])}")
     for lab, kunci in (("Kedaluwarsa", "kedaluwarsa"), ("Garansi", "garansi")):
         s = sisa_hari(b.get(kunci))
-        if s is not None:
+        if s is not None and "tanggal" not in sb:
             ekstra.append(f"{lab}: {status_sisa(s)}")
-    if b.get("dipakai"):
+    if b.get("dipakai") and "tanggal" not in sb:
         ekstra.append(f"Dipakai: {fmt_iso(b['dipakai'])}")
-    if b.get("pemilik"):
+    if b.get("pemilik") and "pemilik" not in sb:
         ekstra.append(f"Milik: {html.escape(b['pemilik'])}")
     if b.get("dibawa"):
         ekstra.append(f"Dibawa sejak {fmt_iso(b['dibawa'])}"
@@ -1415,31 +1446,32 @@ def kartu_barang_html(b: dict, foto: bool = True) -> str:
         ekstra.append(f"Hilang sejak {fmt_iso(b['hilang'])}"
                       + (f", terakhir terlihat di {html.escape(b['hilang_di'])}" if b.get("hilang_di") else ""))
     atr = [f"{lab}: {html.escape(b[k])}" for k, lab in ATRIBUT if b.get(k)]
-    if atr:
+    if atr and "atribut" not in sb:
         ekstra.append(" · ".join(atr))
     induk = induk_dari(b)
-    if induk:
+    if induk and "hubungan" not in sb:
         ekstra.append(f"Di dalam: {html.escape(induk['nama'])}")
     isi = isi_dari(b["id"])
-    if isi:
+    if isi and "hubungan" not in sb:
         ekstra.append("Berisi: " + html.escape(", ".join(x["nama"] for x in isi[:5]))
                       + (f" +{len(isi) - 5} lagi" if len(isi) > 5 else ""))
     cat = ""
-    if b.get("catatan"):
+    if b.get("catatan") and "catatan" not in sb:
         cat += f'<div class="cat">{html_tautan(b["catatan"])}</div>'
-    if daftar_tautan(b):
+    if daftar_tautan(b) and "tautan" not in sb:
         cat += f'<div class="cat">Tautan: {html_daftar_tautan(b)}</div>'
-    if b.get("tag"):
+    if b.get("tag") and "label" not in sb:
         cat += '<div class="cat">' + "".join(f'<span class="tag">{html.escape(t)}</span>' for t in b["tag"]) + '</div>'
-    if b.get("opname"):
+    if b.get("opname") and "tanggal" not in sb:
         ekstra.append(f"Diinventarisasi: {fmt_iso(b['opname'])}")
     if ekstra:
         cat += f'<div class="cat">{" · ".join(ekstra)}</div>'
     merah = " merah" if perlu_beli(b) else ""
+    mt = f'<div class="mt">{html.escape(" • ".join(meta))}</div>' if meta else ""
+    qt = (f'<div class="qt"><b class="{merah.strip()}">{jumlah_b(b)}</b><span>buah</span></div>'
+          if "jumlah" not in sb else "")
     return (f'<div class="itm"><div class="ic">{ic}</div><div class="isi">'
-            f'<div class="jd">{html.escape(b["nama"])}{lencana(b)}</div>'
-            f'<div class="mt">{html.escape(" • ".join(meta))}</div>{cat}</div>'
-            f'<div class="qt"><b class="{merah.strip()}">{jumlah_b(b)}</b><span>buah</span></div></div>')
+            f'<div class="jd">{html.escape(b["nama"])}{lencana(b)}</div>{mt}{cat}</div>{qt}</div>')
 
 
 def kumpul_perhatian():
@@ -1491,7 +1523,7 @@ PANTAU = ["Pinjam-meminjam", "Dibawa dan hilang", "Belanja", "Daftar bawaan", "J
           "Kedaluwarsa dan garansi", "Pengingat berkala", "Nilai barang", "Statistik"]
 MASTER = ["Tempat", "Lokasi", "Sub lokasi", "Kategori", "Label QR", "Ukuran data", "Titik pulih",
           "Cadangan dan pindah data"]
-PENGATURAN = ["Tampilan Beranda"] + (MASTER if adalah_admin() else [])
+PENGATURAN = ["Tampilan Beranda", "Tampilan kartu"] + (MASTER if adalah_admin() else [])
 HALAMAN = ["Beranda"] + UTAMA + PANTAU + PENGATURAN
 if st.session_state.get("halaman") not in HALAMAN:
     st.session_state.halaman = "Beranda"
@@ -1501,7 +1533,7 @@ IKON = {"Beranda": "home", "Cari barang": "search", "Kelola barang": "inventory_
         "Pinjam-meminjam": "handshake", "Dibawa dan hilang": "backpack", "Belanja": "shopping_cart",
         "Daftar bawaan": "luggage", "Jarang dipakai": "schedule",
         "Kedaluwarsa dan garansi": "event_busy", "Nilai barang": "payments", "Pengingat berkala": "notifications_active",
-        "Scan barcode": "barcode_scanner", "Impor barang": "upload_file", "Inventaris ulang": "fact_check", "Statistik": "bar_chart", "Ekspor daftar": "file_download", "Tampilan Beranda": "tune",
+        "Scan barcode": "barcode_scanner", "Impor barang": "upload_file", "Inventaris ulang": "fact_check", "Statistik": "bar_chart", "Ekspor daftar": "file_download", "Tampilan Beranda": "tune", "Tampilan kartu": "view_agenda",
         "Tempat": "home_work", "Lokasi": "place", "Sub lokasi": "account_tree", "Kategori": "sell",
         "Label QR": "qr_code_2", "Ukuran data": "database", "Titik pulih": "restore",
         "Cadangan dan pindah data": "backup"}
@@ -1572,6 +1604,7 @@ DESKRIPSI = {
     "Pengingat berkala": "Barang yang perlu dicek rutin, misalnya baterai cadangan atau alat P3K.",
     "Scan barcode": "Foto barcode di kemasan untuk menemukan barang, atau menambahkannya dengan nama yang terisi otomatis.",
     "Ekspor daftar": "Unduh daftar barang sebagai Excel atau PDF yang rapi untuk dicetak.",
+    "Tampilan kartu": "Pilih keterangan apa yang tampil di kartu barang, misalnya lokasi dan harga saja.",
     "Tampilan Beranda": "Pilih kartu mana yang tampil di Beranda. Berlaku untuk perangkat ini.",
     "Tempat": "Tingkat pertama: rumah atau kantor tempat barang disimpan.",
     "Lokasi": "Tingkat kedua: lemari, rak, atau kotak di dalam satu tempat.",
@@ -4193,6 +4226,33 @@ def halaman_tampilan():
         js_cookie(",".join(st.session_state.beranda_sembunyi) or "-", 31536000, COOKIE_BERANDA)
 
 
+def halaman_tampilan_kartu():
+    sembunyi = muat_kartu_sembunyi()
+    with st.container(key="kartu_barang"):
+        st.markdown("**Keterangan yang tampil di kartu barang**")
+        st.caption("Centang keterangan yang ingin ditampilkan di kartu barang (Cari barang, Kelola barang, dan menu lain). "
+                   "Nama, foto, dan lencana status tetap tampil. Pilihan ini tersimpan di perangkat ini saja.")
+        for k, lab in SEKSI_KARTU:
+            st.checkbox(lab, value=k not in sembunyi, key=f"ks_{k}", on_change=ubah_kartu)
+        c1, c2, c3 = st.columns(3)
+        c1.button("Tampilkan semua", key="ks_semua", on_click=atur_kartu, args=([],), use_container_width=True)
+        c2.button("Lokasi dan harga saja", key="ks_lh", on_click=atur_kartu,
+                  args=([k for k, _ in SEKSI_KARTU if k not in ("lokasi", "harga", "jumlah")],), use_container_width=True)
+        c3.button("Hanya lokasi", key="ks_l", on_click=atur_kartu,
+                  args=([k for k, _ in SEKSI_KARTU if k != "lokasi"],), use_container_width=True)
+        st.markdown("**Contoh tampilan**")
+        if not D["barang"]:
+            st.caption("Belum ada barang untuk dijadikan contoh.")
+        else:
+            def lengkap(b):
+                return sum(1 for k in ("kategori", "harga", "catatan", "tautan", "tag", "pemilik", "merek", "dibeli", "dalam") if b.get(k))
+            contoh = max(D["barang"], key=lengkap)
+            with st.container(key="item_contoh"):
+                st.markdown(kartu_barang_html(contoh), unsafe_allow_html=True)
+    if st.session_state.pop("kartu_ubah", False):
+        js_cookie(",".join(st.session_state.kartu_sembunyi) or "-", 31536000, COOKIE_KARTU)
+
+
 # ------------------------------------------------------------ pengingat berkala
 def halaman_pengingat():
     t1, t2 = st.tabs(["Jadwal", "Atur pengingat"])
@@ -5288,6 +5348,8 @@ if halaman == "Ekspor daftar":
     halaman_ekspor()
 if halaman == "Tampilan Beranda":
     halaman_tampilan()
+if halaman == "Tampilan kartu":
+    halaman_tampilan_kartu()
 if halaman == "Daftar bawaan":
     halaman_paket()
 if halaman == "Jarang dipakai":
