@@ -147,6 +147,22 @@ st.markdown("""
 [class*="st-key-item_"]{background:#fff;border:1px solid #e3e7ee;border-radius:14px;padding:.8rem 1rem;
   box-shadow:0 1px 3px rgba(16,24,40,.06);margin-bottom:-.35rem;color:#111827 !important;gap:.45rem !important}
 [class*="st-key-item_"] [data-testid="stMarkdown"],[class*="st-key-item_"] [data-testid="stMarkdownContainer"]{margin-bottom:0 !important}
+/* Daftar pengaturan (tempat, lokasi, kategori, pemilik, label) */
+.dh{display:flex;align-items:center;gap:.55rem;margin:.1rem 0 .15rem}
+.dh .dt{font-size:1.08rem;font-weight:800;color:#111827;letter-spacing:-.01em}
+.dh .dn{background:#e8f3ec;color:#256b4a;font-size:.72rem;font-weight:700;border-radius:999px;padding:.08rem .6rem}
+.dd{color:#6b7280;font-size:.84rem;line-height:1.45;margin-bottom:.35rem}
+[class*="st-key-kartu_g_daftar"] [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important;align-items:center;gap:.5rem !important;
+  background:#f7f9fb;border:1px solid #e6eaf0;border-left:3px solid #34a874;border-radius:12px;padding:.4rem .6rem .4rem .8rem;margin-bottom:.1rem}
+[class*="st-key-kartu_g_daftar"] [data-testid="stColumn"]{min-width:0 !important;flex:0 0 auto !important;width:auto !important}
+[class*="st-key-kartu_g_daftar"] [data-testid="stColumn"]:first-child{flex:1 1 auto !important}
+[class*="st-key-kartu_g_daftar"] [data-testid="stColumn"]:first-child p{font-weight:600;overflow-wrap:anywhere}
+[class*="st-key-kartu_g_daftar"] [data-testid="stForm"] [data-testid="stHorizontalBlock"]{background:transparent;border:0;padding:0}
+[class*="st-key-kartu_g_daftar"] button{min-height:2.05rem;padding:.15rem .7rem;border-radius:9px;font-size:.82rem;white-space:nowrap}
+[class*="st-key-kartu_g_daftar"] button p{white-space:nowrap;font-size:.82rem}
+[class*="st-key-ub_"] button{border:1px solid #256b4a;color:#256b4a}
+[class*="st-key-hp_"] button{border:1px solid #e9b5b0;color:#b42318}
+[class*="st-key-kartu_g_daftar"] [data-testid="stForm"]{border:1px dashed #cfd6e0;background:#fafbfc;border-radius:14px;margin-top:.5rem}
 @media (max-width:640px){
   [class*="st-key-item_"]{padding:.7rem .85rem}
   .itm{gap:.7rem}
@@ -213,6 +229,12 @@ CSS_GELAP = """
 .statcard,[data-testid="stForm"],[data-testid="stExpander"],[data-testid="stMetric"],[class*="st-key-item_"]{
   background:#172131 !important;border-color:#2a3547 !important;box-shadow:none !important;color:#e5e7eb !important}
 [data-testid="stExpander"] details{border-color:#2a3547 !important}
+.dh .dt{color:#f1f5f9 !important}.dh .dn{background:#1b2d27 !important;color:#5ccf9c !important}.dd{color:#94a3b8 !important}
+[class*="st-key-kartu_g_daftar"] [data-testid="stHorizontalBlock"]{background:#1c2738 !important;border-color:#2a3547 !important;border-left-color:#34a874 !important}
+[class*="st-key-kartu_g_daftar"] [data-testid="stForm"] [data-testid="stHorizontalBlock"]{background:transparent !important;border:0 !important}
+[class*="st-key-kartu_g_daftar"] [data-testid="stForm"]{background:#1a2333 !important;border:1px dashed #3a4760 !important}
+[class*="st-key-ub_"] button{border-color:#34a874 !important;color:#5ccf9c !important}
+[class*="st-key-hp_"] button{border-color:#7a3a36 !important;color:#fca5a5 !important}
 .sc-judul,.sc-val,.itm .jd,.itm .qt b,.perhatian,.brg{color:#f1f5f9 !important}
 .sc-val.m,.itm .qt b.merah{color:#f87171 !important}
 .sc-val.g{color:#4ade80 !important}
@@ -4215,13 +4237,18 @@ def halaman_label():
 
 
 # ---------------------------------------------------------------- master data
+def kepala_daftar(judul: str, n: int, hint: str):
+    st.markdown(f'<div class="dh"><span class="dt">{html.escape(judul)}</span><span class="dn">{n}</span></div>'
+                f'<div class="dd">{html.escape(hint)}</div>', unsafe_allow_html=True)
+
+
 def daftar_sederhana(judul: str, kunci: str, hint: str):
     """Daftar nama dengan tombol Ubah nama dan Hapus per baris, dan kolom tambah di bawah."""
     k_edit, k_hapus = f"edit_{kunci}", f"hapus_{kunci}"
-    with st.expander(f"{judul} ({len(D[kunci])})", expanded=True):
-        st.caption(hint)
+    with st.container(key=f"kartu_g_daftar_{kunci}"):
+        kepala_daftar(judul, len(D[kunci]), hint)
         if not D[kunci]:
-            st.write("Belum ada.")
+            st.caption("Belum ada. Tambahkan lewat kolom di bawah.")
         for x in D[kunci]:
             c1, c2, c3 = st.columns([5, 1.8, 1.6], vertical_alignment="center")
             if st.session_state.get(k_edit) == x["id"]:
@@ -4257,11 +4284,11 @@ def daftar_sederhana(judul: str, kunci: str, hint: str):
                     selesai_simpan("Dihapus.", **{k_hapus: None})
             else:
                 c1.write(x["nama"])
-                c2.button("Ubah nama", key=f"ub_{kunci}_{x['id']}", on_click=atur, args=(k_edit, x["id"]))
-                c3.button("Hapus", key=f"hp_{kunci}_{x['id']}", on_click=atur, args=(k_hapus, x["id"]))
+                c2.button("Ubah", key=f"ub_{kunci}_{x['id']}", icon=":material/edit:", on_click=atur, args=(k_edit, x["id"]))
+                c3.button("Hapus", key=f"hp_{kunci}_{x['id']}", icon=":material/delete:", on_click=atur, args=(k_hapus, x["id"]))
         with st.form(f"tambah_{kunci}", clear_on_submit=True):
             nama = st.text_input(f"Tambah {judul.lower()}", placeholder="Nama baru")
-            if st.form_submit_button("Tambah"):
+            if st.form_submit_button("Tambah", type="primary", icon=":material/add:"):
                 nama = nama.strip()
                 if not nama:
                     st.error("Nama tidak boleh kosong.")
@@ -4278,9 +4305,9 @@ def halaman_sublokasi():
         st.info("Buat lokasi dulu di menu Lokasi, lalu tambahkan sub lokasinya di sini.")
         return
     peta = {l["id"]: nama_lok(l) for l in daftar_lokasi()}
-    with st.expander(f"Sub lokasi ({len(D['sublokasi'])})", expanded=True):
-        st.caption("Sub lokasi berada di bawah satu lokasi (misalnya Laci 2 di Lemari kamar). "
-                   "Menghapus sub lokasi tidak menghapus barangnya.")
+    with st.container(key="kartu_g_daftar_sub"):
+        kepala_daftar("Sub lokasi", len(D["sublokasi"]), "Sub lokasi berada di bawah satu lokasi (misalnya Laci 2 di Lemari kamar). "
+                      "Menghapus sub lokasi tidak menghapus barangnya.")
         for l in daftar_lokasi():
             milik = [x for x in D["sublokasi"] if x["lokasi"] == l["id"]]
             st.markdown(f'<div class="bidang">{html.escape(nama_lok(l))} · {len(milik)} sub lokasi</div>',
@@ -4336,8 +4363,8 @@ def halaman_sublokasi():
                                        hapus_sub=None)
                 else:
                     c1.markdown(html_nama_foto(x), unsafe_allow_html=True)
-                    c2.button("Ubah nama", key=f"ub_sub_{x['id']}", on_click=atur, args=("edit_sub", x["id"]))
-                    c3.button("Hapus", key=f"hp_sub_{x['id']}", on_click=atur, args=("hapus_sub", x["id"]))
+                    c2.button("Ubah", key=f"ub_sub_{x['id']}", icon=":material/edit:", on_click=atur, args=("edit_sub", x["id"]))
+                    c3.button("Hapus", key=f"hp_sub_{x['id']}", icon=":material/delete:", on_click=atur, args=("hapus_sub", x["id"]))
         with st.form("tambah_sub", clear_on_submit=True):
             f1, f2 = st.columns([2, 3])
             induk = f1.selectbox("Di bawah lokasi", list(peta), format_func=lambda i: peta[i])
@@ -4364,9 +4391,9 @@ def halaman_lokasi():
     if not pt:
         st.info("Isi dulu nama tempat (misalnya Rumah A, Rumah B, Kantor) di menu Tempat. "
                 "Lokasi tanpa tempat tetap bisa dipakai.")
-    with st.expander(f"Lokasi ({len(D['lokasi'])})", expanded=True):
-        st.caption("Lokasi adalah lemari, rak, atau kotak di dalam satu tempat (misalnya Lemari kamar di Rumah A). "
-                   "Menghapus lokasi ikut menghapus sub lokasinya. Barangnya tidak terhapus.")
+    with st.container(key="kartu_g_daftar_lok"):
+        kepala_daftar("Lokasi", len(D["lokasi"]), "Lokasi adalah lemari, rak, atau kotak di dalam satu tempat (misalnya Lemari kamar di Rumah A). "
+                      "Menghapus lokasi ikut menghapus sub lokasinya. Barangnya tidak terhapus.")
         urut = sorted(D["lokasi"], key=lambda l: l["nama"].lower())
         for tid, tnama in list(pt.items()) + [("", "Belum diatur tempatnya")]:
             milik = [x for x in urut if (x.get("tempat") == tid if tid else x.get("tempat") not in pt)]
@@ -4436,8 +4463,8 @@ def halaman_lokasi():
                                        hapus_lokasi=None)
                 else:
                     c1.markdown(html_nama_foto(x), unsafe_allow_html=True)
-                    c2.button("Ubah", key=f"ub_lok_{x['id']}", on_click=atur, args=("edit_lokasi", x["id"]))
-                    c3.button("Hapus", key=f"hp_lok_{x['id']}", on_click=atur, args=("hapus_lokasi", x["id"]))
+                    c2.button("Ubah", key=f"ub_lok_{x['id']}", icon=":material/edit:", on_click=atur, args=("edit_lokasi", x["id"]))
+                    c3.button("Hapus", key=f"hp_lok_{x['id']}", icon=":material/delete:", on_click=atur, args=("hapus_lokasi", x["id"]))
         with st.form("tambah_lokasi", clear_on_submit=True):
             f1, f2 = st.columns([2, 3])
             tem = f1.selectbox("Di tempat", ops, format_func=fmt)
@@ -4465,8 +4492,8 @@ def semua_barang_pemilik() -> list:
 def halaman_kelola_label():
     """Daftar label diambil dari barang. Di sini label bisa diubah nama, digabung, atau dilepas dari barangnya."""
     nama_nama = daftar_tag()
-    with st.expander(f"Label barang ({len(nama_nama)})", expanded=True):
-        st.caption("Label muncul otomatis dari barang yang diberi label. Mengubah nama ikut mengganti semua barangnya. "
+    with st.container(key="kartu_g_daftar_tag"):
+        kepala_daftar("Label", len(nama_nama), "Label muncul otomatis dari barang yang diberi label. Mengubah nama ikut mengganti semua barangnya. "
                    "Kalau namanya sama dengan label lain, keduanya digabung. Menghapus label tidak menghapus barangnya.")
         if not nama_nama:
             st.write("Belum ada label. Tambahkan lewat Kelola barang atau aksi massal Tambah label.")
@@ -4505,15 +4532,15 @@ def halaman_kelola_label():
                     selesai_simpan("Label dihapus.", hapus_tag=None)
             else:
                 c1.write(f"{nm} · {n_b} barang")
-                c2.button("Ubah nama", key=f"ub_tag_{kunci}", on_click=atur, args=("edit_tag", nm))
-                c3.button("Hapus", key=f"hp_tag_{kunci}", on_click=atur, args=("hapus_tag", nm))
+                c2.button("Ubah", key=f"ub_tag_{kunci}", icon=":material/edit:", on_click=atur, args=("edit_tag", nm))
+                c3.button("Hapus", key=f"hp_tag_{kunci}", icon=":material/delete:", on_click=atur, args=("hapus_tag", nm))
 
 
 def halaman_pemilik():
     """Daftar pemilik diambil dari barang. Di sini nama bisa diubah, digabung, atau dilepas dari barangnya."""
     nama_nama = daftar_pemilik()
-    with st.expander(f"Pemilik ({len(nama_nama)})", expanded=True):
-        st.caption("Pemilik muncul otomatis dari barang yang diisi pemiliknya. Mengubah nama ikut mengganti semua barangnya. "
+    with st.container(key="kartu_g_daftar_pem"):
+        kepala_daftar("Pemilik", len(nama_nama), "Pemilik muncul otomatis dari barang yang diisi pemiliknya. Mengubah nama ikut mengganti semua barangnya. "
                    "Kalau namanya sama dengan pemilik lain, keduanya digabung. Menghapus pemilik tidak menghapus barangnya.")
         if not nama_nama:
             st.write("Belum ada pemilik. Isi pemilik lewat Kelola barang.")
@@ -4548,8 +4575,8 @@ def halaman_pemilik():
                     selesai_simpan("Pemilik dihapus.", hapus_pemilik=None)
             else:
                 c1.write(f"{nm} · {n_b} barang")
-                c2.button("Ubah nama", key=f"ub_pem_{kunci}", on_click=atur, args=("edit_pemilik", nm))
-                c3.button("Hapus", key=f"hp_pem_{kunci}", on_click=atur, args=("hapus_pemilik", nm))
+                c2.button("Ubah", key=f"ub_pem_{kunci}", icon=":material/edit:", on_click=atur, args=("edit_pemilik", nm))
+                c3.button("Hapus", key=f"hp_pem_{kunci}", icon=":material/delete:", on_click=atur, args=("hapus_pemilik", nm))
 
 
 def cadangan():
