@@ -339,6 +339,7 @@ def data_kosong() -> dict:
         "rencana": [],    # [{"id","nama","jumlah","harga","prioritas","catatan","dibuat","dibeli"}]
         "paket": [],      # [{"id","nama","isi":[{"id","nama","barang","jumlah","siap"}]}]  daftar bawaan
         "aktivitas": [],  # [{"id","waktu","oleh","jenis","barang","nama","rincian"}]  riwayat aktivitas
+        "pengaturan": {},  # {"kartu":[bagian yang disembunyikan],"beranda":[...]}  bawaan bersama semua perangkat
         "pindah_massal": [],  # [{"id","waktu","oleh","tujuan":{lokasi,sublokasi},"tujuan_nama","item":[{id,nama,dari:{lokasi,sublokasi,dalam}}],"dibatalkan"}]
         "sampah": [],     # [{"id","barang":{...data barang...},"dihapus":"YYYY-MM-DD HH:MM","oleh"}]  tempat sampah
     }
@@ -436,7 +437,7 @@ def simpan(data: dict, pesan: str = "Perbarui data barang"):
     else:
         with open(FILE_LOKAL, "w", encoding="utf-8") as f:
             f.write(teks)
-        try:                                   # salinan tiap versi, untuk menu Titik pulih
+        try:                                   # salinan tiap versi, untuk Titik pulih
             dv = FILE_LOKAL + ".versi"
             os.makedirs(dv, exist_ok=True)
             nama_v = sekarang().strftime("%Y%m%d-%H%M%S-%f") + ".json"
@@ -1419,9 +1420,11 @@ def muat_kartu_sembunyi() -> set:
     """Bagian kartu barang yang disembunyikan. Pilihan diingat di perangkat ini lewat cookie."""
     if "kartu_sembunyi" not in st.session_state:
         try:
-            ck = st.context.cookies.get(COOKIE_KARTU, "")
+            ck = st.context.cookies.get(COOKIE_KARTU)
         except Exception:
-            ck = ""
+            ck = None
+        if not isinstance(ck, str):            # perangkat ini belum punya pilihan sendiri: pakai bawaan bersama
+            ck = ",".join(D.get("pengaturan", {}).get("kartu", []))
         sah = {k for k, _ in SEKSI_KARTU}
         st.session_state.kartu_sembunyi = [k for k in ck.split(",") if k in sah]
     return set(st.session_state.kartu_sembunyi)
@@ -1543,26 +1546,25 @@ if not cfg_github():
     st.warning("Mode uji coba: data disimpan di file lokal dan bisa hilang saat aplikasi "
                "dimulai ulang. Isi pengaturan GitHub (lihat README) agar data permanen.")
 
-UTAMA = ["Cari barang", "Scan barcode", "Jelajah lokasi", "Kelola barang", "Pindah massal", "Inventaris ulang", "Riwayat perpindahan", "Riwayat aktivitas",
+UTAMA = ["Cari barang", "Scan barcode", "Jelajah lokasi", "Kelola barang", "Pindah massal", "Inventaris ulang", "Riwayat",
          "Tempat sampah"]
 PANTAU = ["Pinjam-meminjam", "Dibawa, hilang, rusak", "Belanja", "Daftar bawaan", "Jarang dipakai",
-          "Kedaluwarsa dan garansi", "Pengingat berkala", "Catatan perawatan", "Nilai barang", "Statistik"]
-MASTER = ["Tempat", "Lokasi", "Sub lokasi", "Kategori", "Pemilik", "Label barang", "Label QR", "Ukuran data", "Titik pulih",
-          "Cadangan dan pindah data"]
-PENGATURAN = ["Tampilan Beranda", "Tampilan kartu", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
+          "Jatuh tempo", "Catatan perawatan", "Statistik"]
+MASTER = ["Tempat dan lokasi", "Kategori dan label", "Label QR", "Ukuran data", "Cadangan dan pulihkan"]
+PENGATURAN = ["Tampilan", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
 HALAMAN = ["Beranda"] + UTAMA + PANTAU + PENGATURAN
 if st.session_state.get("halaman") not in HALAMAN:
     st.session_state.halaman = "Beranda"
 halaman = st.session_state.halaman
-IKON = {"Beranda": "home", "Cari barang": "search", "Kelola barang": "inventory_2",
-        "Jelajah lokasi": "account_tree", "Pindah massal": "swap_horiz", "Riwayat perpindahan": "history", "Riwayat aktivitas": "manage_history", "Tempat sampah": "delete",
-        "Pinjam-meminjam": "handshake", "Dibawa, hilang, rusak": "backpack", "Catatan perawatan": "build", "Label barang": "label", "Belanja": "shopping_cart",
-        "Daftar bawaan": "luggage", "Jarang dipakai": "schedule",
-        "Kedaluwarsa dan garansi": "event_busy", "Nilai barang": "payments", "Pengingat berkala": "notifications_active",
-        "Scan barcode": "barcode_scanner", "Inventaris ulang": "fact_check", "Statistik": "bar_chart", "Ekspor dan impor": "import_export", "Tampilan Beranda": "tune", "Tampilan kartu": "view_agenda",
-        "Tempat": "home_work", "Lokasi": "place", "Sub lokasi": "account_tree", "Kategori": "sell", "Pemilik": "person",
-        "Label QR": "qr_code_2", "Ukuran data": "database", "Titik pulih": "restore",
-        "Cadangan dan pindah data": "backup"}
+IKON = {"Beranda": "home", "Cari barang": "search", "Kelola barang": "inventory_2", "Scan barcode": "barcode_scanner",
+        "Jelajah lokasi": "account_tree", "Pindah massal": "swap_horiz", "Inventaris ulang": "fact_check",
+        "Riwayat": "history", "Tempat sampah": "delete",
+        "Pinjam-meminjam": "handshake", "Dibawa, hilang, rusak": "backpack", "Belanja": "shopping_cart",
+        "Daftar bawaan": "luggage", "Jarang dipakai": "schedule", "Jatuh tempo": "event_busy",
+        "Catatan perawatan": "build", "Statistik": "bar_chart",
+        "Tampilan": "tune", "Ekspor dan impor": "import_export",
+        "Tempat dan lokasi": "home_work", "Kategori dan label": "sell", "Label QR": "qr_code_2",
+        "Ukuran data": "database", "Cadangan dan pulihkan": "backup"}
 LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">'
         '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
         '<stop offset="0" stop-color="#34a874"/><stop offset="1" stop-color="#1f6b49"/></linearGradient></defs>'
@@ -1607,39 +1609,30 @@ with st.sidebar:
                   icon=":material/logout:", on_click=keluar)
 
 DESKRIPSI = {
+    "Riwayat": "Perpindahan barang dan aktivitas (tambah, ubah, buang, pulihkan) yang tercatat otomatis.",
+    "Jatuh tempo": "Pantau kedaluwarsa, masa garansi, dan barang yang perlu dicek rutin.",
+    "Statistik": "Barang yang sering pindah, jumlah per lokasi, aktivitas bulanan, per pemilik, kelengkapan data, dan nilai barang.",
+    "Tampilan": "Pilih kartu di Beranda dan keterangan di kartu barang. Bisa disimpan untuk semua perangkat.",
+    "Tempat dan lokasi": "Tiga tingkat penyimpanan: tempat, lokasi, dan sub lokasi.",
+    "Kategori dan label": "Kelola kategori, pemilik, dan label barang: ubah nama atau gabungkan yang ganda.",
+    "Cadangan dan pulihkan": "Unduh cadangan data, muat dari berkas, atau pulihkan ke versi sebelumnya.",
     "Beranda": "Ringkasan barang, hal yang perlu perhatian, dan grafik.",
     "Cari barang": "Cari barang berdasarkan nama, lokasi, kategori, atau catatan.",
     "Kelola barang": "Tambah, ubah, atau hapus barang beserta lokasi, foto, dan tanggalnya.",
     "Pindah massal": "Pindahkan banyak barang sekaligus ke lokasi lain, misalnya saat membereskan kotak.",
     "Inventaris ulang": "Cocokkan isi satu lokasi dengan keadaan sebenarnya: centang yang ada, koreksi jumlah, tandai yang hilang.",
-    "Statistik": "Barang yang sering pindah, jumlah buah per lokasi, aktivitas bulanan, per pemilik, dan kelengkapan data.",
-    "Riwayat perpindahan": "Catatan otomatis kapan dan dari mana ke mana barang dipindah.",
     "Dibawa, hilang, rusak": "Barang yang sedang dibawa keluar, belum ketemu, rusak, atau sedang diservis.",
     "Catatan perawatan": "Riwayat servis, perbaikan, dan perawatan tiap barang beserta biayanya.",
-    "Label barang": "Ubah nama, gabungkan, atau hapus label yang dipakai barang.",
     "Ukuran data": "Pantau besar data dan foto di penyimpanan, dan bersihkan foto yang tidak terpakai.",
-    "Titik pulih": "Lihat versi data sebelumnya dan pulihkan seluruh data kalau terjadi kesalahan besar.",
     "Jelajah lokasi": "Telusuri isi tiap tempat, lokasi, dan sub lokasi, lengkap dengan jumlah barangnya.",
-    "Riwayat aktivitas": "Catatan otomatis siapa menambah, mengubah, membuang, atau memulihkan barang.",
     "Tempat sampah": "Barang yang dibuang disimpan 30 hari di sini, bisa dipulihkan sebelum hilang permanen.",
     "Pinjam-meminjam": "Catat barang yang kamu pinjamkan atau yang kamu pinjam, lengkap dengan tenggatnya.",
     "Belanja": "Stok menipis atau habis (otomatis) dan rencana barang baru yang ingin dibeli, dalam satu daftar belanja.",
     "Daftar bawaan": "Daftar barang untuk dibawa (liburan, pindahan, dll.) yang bisa dicentang satu per satu.",
     "Jarang dipakai": "Barang yang sudah lama tidak dipakai, untuk bahan membereskan atau melepas barang.",
-    "Kedaluwarsa dan garansi": "Pantau tanggal kedaluwarsa dan masa garansi.",
-    "Nilai barang": "Total nilai barang berdasarkan harga beli.",
-    "Pengingat berkala": "Barang yang perlu dicek rutin, misalnya baterai cadangan atau alat P3K.",
     "Scan barcode": "Foto barcode di kemasan untuk menemukan barang, atau menambahkannya dengan nama yang terisi otomatis.",
     "Ekspor dan impor": "Unduh daftar barang sebagai Excel atau PDF untuk dicetak, atau tambah banyak barang sekaligus dari file Excel atau CSV.",
-    "Tampilan kartu": "Pilih keterangan apa yang tampil di kartu barang, misalnya lokasi dan harga saja.",
-    "Tampilan Beranda": "Pilih kartu mana yang tampil di Beranda. Berlaku untuk perangkat ini.",
-    "Tempat": "Tingkat pertama: rumah atau kantor tempat barang disimpan.",
-    "Lokasi": "Tingkat kedua: lemari, rak, atau kotak di dalam satu tempat.",
-    "Sub lokasi": "Tingkat ketiga: bagian di dalam lokasi, misalnya laci 2 atau rak atas.",
-    "Kategori": "Pengelompokan jenis barang.",
-    "Pemilik": "Daftar pemilik barang. Ubah nama atau gabungkan pemilik yang tertulis ganda.",
     "Label QR": "Cetak label QR untuk ditempel di lemari atau kotak. Dipindai, langsung muncul isinya.",
-    "Cadangan dan pindah data": "Unduh cadangan data atau muat data dari berkas.",
 }
 _grup = ("PENGATURAN" if halaman in PENGATURAN else "RINGKASAN" if halaman == "Beranda"
          else "PANTAU" if halaman in PANTAU else "BARANG")
@@ -1744,9 +1737,11 @@ def muat_beranda_sembunyi():
     """Pilihan kartu Beranda diingat di perangkat ini lewat cookie."""
     if "beranda_sembunyi" not in st.session_state:
         try:
-            ck = st.context.cookies.get(COOKIE_BERANDA, "")
+            ck = st.context.cookies.get(COOKIE_BERANDA)
         except Exception:
-            ck = ""
+            ck = None
+        if not isinstance(ck, str):
+            ck = ",".join(D.get("pengaturan", {}).get("beranda", []))
         sah = {k for k, _ in SEKSI_BERANDA}
         st.session_state.beranda_sembunyi = [k for k in ck.split(",") if k in sah]
 
@@ -1817,7 +1812,7 @@ if halaman == "Beranda":
                                 f'<div class="sub">{html.escape(nama_tempat(b))} · {teks_cek(b["cek_tiap"]).lower()} · '
                                 f'{status_sisa(s)}</div></div>', unsafe_allow_html=True)
                 if len(_jt) > 8:
-                    st.caption(f"Dan {len(_jt) - 8} barang lain di menu Pengingat berkala.")
+                    st.caption(f"Dan {len(_jt) - 8} barang lain di menu Jatuh tempo (tab Cek berkala).")
 
         if "favorit" not in sembunyi:
             fav_l = sorted([b for b in brg if b.get("favorit")], key=lambda x: x["nama"].lower())
@@ -2396,7 +2391,7 @@ def halaman_barang():
                                    format_func=lambda i: TANPA_KAT if not i else pk[i])
             h1, h2 = st.columns(2)
             harga = h1.number_input("Harga beli per buah (Rp)", min_value=0, value=harga_b(b), step=1000,
-                                    help="Isi 0 kalau belum tahu. Dipakai di menu Nilai barang.")
+                                    help="Isi 0 kalau belum tahu. Dipakai di Statistik (tab Nilai barang).")
             tb = h2.date_input("Tanggal pembelian (boleh kosong)", value=iso_ke_date(b.get("dibeli")),
                                min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY",
                                help="Berguna untuk menghitung masa garansi dan umur barang.")
@@ -4591,12 +4586,31 @@ def cadangan():
 
 
 # ------------------------------------------------------------ tampilan Beranda (Pengaturan)
+def simpan_bersama(kunci: str, daftar: list):
+    D.setdefault("pengaturan", {})[kunci] = list(daftar)
+    selesai_simpan("Disimpan sebagai bawaan untuk semua perangkat.")
+
+
+def tombol_bersama(kunci: str, daftar: list, pakai):
+    """Dua tombol: simpan pilihan perangkat ini sebagai bawaan bersama, atau ambil bawaan bersama ke perangkat ini."""
+    st.markdown("**Semua perangkat**")
+    st.caption("Pilihan di atas hanya berlaku di perangkat ini. Simpan sebagai bawaan bersama supaya perangkat lain "
+               "(atau HP baru, atau setelah cookie terhapus) ikut memakainya.")
+    ada = kunci in D.get("pengaturan", {})
+    c1, c2 = st.columns(2)
+    if c1.button("Simpan untuk semua perangkat", key=f"bersama_{kunci}", type="primary", use_container_width=True):
+        simpan_bersama(kunci, daftar)
+    c2.button("Pakai bawaan bersama", key=f"ambil_{kunci}", use_container_width=True, disabled=not ada,
+              on_click=pakai, args=(list(D.get("pengaturan", {}).get(kunci, [])),),
+              help=None if ada else "Belum ada bawaan bersama yang disimpan.")
+
+
 def halaman_tampilan():
     muat_beranda_sembunyi()
     sembunyi = set(st.session_state.beranda_sembunyi)
     with st.container(key="kartu_barang"):
         st.markdown("**Kartu yang tampil di Beranda**")
-        st.caption("Centang kartu yang ingin ditampilkan. Pilihan ini tersimpan di perangkat ini saja.")
+        st.caption("Centang kartu yang ingin ditampilkan. Pilihan ini berlaku di perangkat ini.")
         for k, lab in SEKSI_BERANDA:
             st.checkbox(lab, value=k not in sembunyi, key=f"bs_{k}", on_change=ubah_beranda)
         c1, c2, c3 = st.columns(3)
@@ -4605,16 +4619,17 @@ def halaman_tampilan():
                   args=([k for k, _ in SEKSI_BERANDA if k != "ringkasan"],), use_container_width=True)
         c3.button("Lihat Beranda", key="bs_lihat", on_click=pindah_halaman, args=("Beranda",),
                   type="primary", use_container_width=True)
+        tombol_bersama("beranda", st.session_state.beranda_sembunyi, atur_beranda)
     if st.session_state.pop("beranda_ubah", False):
         js_cookie(",".join(st.session_state.beranda_sembunyi) or "-", 31536000, COOKIE_BERANDA)
 
 
 def halaman_tampilan_kartu():
     sembunyi = muat_kartu_sembunyi()
-    with st.container(key="kartu_barang"):
+    with st.container(key="kartu_g_tkartu"):
         st.markdown("**Keterangan yang tampil di kartu barang**")
         st.caption("Centang keterangan yang ingin ditampilkan di kartu barang (Cari barang, Kelola barang, dan menu lain). "
-                   "Nama, foto, dan lencana status tetap tampil. Pilihan ini tersimpan di perangkat ini saja.")
+                   "Nama, foto, dan lencana status tetap tampil. Pilihan ini berlaku di perangkat ini.")
         for k, lab in SEKSI_KARTU:
             st.checkbox(lab, value=k not in sembunyi, key=f"ks_{k}", on_change=ubah_kartu)
         c1, c2, c3 = st.columns(3)
@@ -4623,6 +4638,7 @@ def halaman_tampilan_kartu():
                   args=([k for k, _ in SEKSI_KARTU if k not in ("lokasi", "harga", "jumlah")],), use_container_width=True)
         c3.button("Hanya lokasi", key="ks_l", on_click=atur_kartu,
                   args=([k for k, _ in SEKSI_KARTU if k != "lokasi"],), use_container_width=True)
+        tombol_bersama("kartu", st.session_state.kartu_sembunyi, atur_kartu)
         st.markdown("**Contoh tampilan**")
         if not D["barang"]:
             st.caption("Belum ada barang untuk dijadikan contoh.")
@@ -5238,7 +5254,7 @@ def halaman_opname():
         c2.button("Kosongkan", key="op_kosong", use_container_width=True, on_click=set_opname, args=(ids, False))
         aksi = st.radio("Barang yang tidak dicentang", ["Tandai hilang", "Biarkan saja"], key="op_aksi",
                         horizontal=True, help="Tandai hilang memasukkannya ke menu Dibawa, hilang, rusak. "
-                                              "Bisa dibatalkan lewat Riwayat aktivitas.")
+                                              "Bisa dibatalkan lewat Riwayat (tab Aktivitas).")
         with st.form(f"form_op_{versi()}"):
             for b in items:
                 k1, k2 = st.columns([4, 1.5], vertical_alignment="center")
@@ -5682,16 +5698,10 @@ if halaman == "Kelola barang":
     halaman_barang()
 if halaman == "Inventaris ulang":
     halaman_opname()
-if halaman == "Statistik":
-    halaman_statistik()
 if halaman == "Pindah massal":
     halaman_pindah()
-if halaman == "Riwayat perpindahan":
-    halaman_riwayat()
 if halaman == "Jelajah lokasi":
     halaman_jelajah()
-if halaman == "Riwayat aktivitas":
-    halaman_aktivitas()
 if halaman == "Tempat sampah":
     halaman_sampah()
 if halaman == "Dibawa, hilang, rusak":
@@ -5702,12 +5712,6 @@ if halaman == "Pinjam-meminjam":
     halaman_pinjam()
 if halaman == "Belanja":
     halaman_belanja()
-if halaman == "Kedaluwarsa dan garansi":
-    halaman_tanggal()
-if halaman == "Nilai barang":
-    halaman_nilai()
-if halaman == "Pengingat berkala":
-    halaman_pengingat()
 if halaman == "Scan barcode":
     halaman_scan()
 if halaman == "Ekspor dan impor":
@@ -5716,33 +5720,61 @@ if halaman == "Ekspor dan impor":
         halaman_ekspor()
     with t_impor:
         halaman_impor()
-if halaman == "Tampilan Beranda":
-    halaman_tampilan()
-if halaman == "Tampilan kartu":
-    halaman_tampilan_kartu()
 if halaman == "Daftar bawaan":
     halaman_paket()
 if halaman == "Jarang dipakai":
     halaman_jarang()
-if adalah_admin() and halaman == "Tempat":
-    daftar_sederhana("Tempat", "tempat", "Tempat besar yang menyimpan barang, misalnya Rumah A, Rumah B, atau Kantor. "
-                     "Menghapus tempat tidak menghapus lokasinya, hanya melepasnya dari tempat itu.")
-if adalah_admin() and halaman == "Lokasi":
-    halaman_lokasi()
-if adalah_admin() and halaman == "Sub lokasi":
-    halaman_sublokasi()
-if adalah_admin() and halaman == "Kategori":
-    daftar_sederhana("Kategori", "kategori", "Pengelompokan jenis barang, misalnya pakaian atau perawatan diri. "
-                     "Boleh dikosongkan kalau tidak diperlukan.")
-if adalah_admin() and halaman == "Pemilik":
-    halaman_pemilik()
-if adalah_admin() and halaman == "Label barang":
-    halaman_kelola_label()
+if halaman == "Riwayat":
+    t_p, t_a = st.tabs(["Perpindahan", "Aktivitas"])
+    with t_p:
+        halaman_riwayat()
+    with t_a:
+        halaman_aktivitas()
+if halaman == "Statistik":
+    t_s, t_n = st.tabs(["Ringkasan", "Nilai barang"])
+    with t_s:
+        halaman_statistik()
+    with t_n:
+        halaman_nilai()
+if halaman == "Jatuh tempo":
+    t_k, t_g, t_c = st.tabs(["Kedaluwarsa", "Garansi", "Cek berkala"])
+    with t_k:
+        _tabel_tanggal("kedaluwarsa", "Kedaluwarsa")
+    with t_g:
+        _tabel_tanggal("garansi", "Garansi sampai")
+    with t_c:
+        halaman_pengingat()
+if halaman == "Tampilan":
+    t_b, t_k = st.tabs(["Beranda", "Kartu barang"])
+    with t_b:
+        halaman_tampilan()
+    with t_k:
+        halaman_tampilan_kartu()
+if adalah_admin() and halaman == "Tempat dan lokasi":
+    t_t, t_l, t_s = st.tabs(["Tempat", "Lokasi", "Sub lokasi"])
+    with t_t:
+        daftar_sederhana("Tempat", "tempat", "Tempat besar yang menyimpan barang, misalnya Rumah A, Rumah B, atau Kantor. "
+                         "Menghapus tempat tidak menghapus lokasinya, hanya melepasnya dari tempat itu.")
+    with t_l:
+        halaman_lokasi()
+    with t_s:
+        halaman_sublokasi()
+if adalah_admin() and halaman == "Kategori dan label":
+    t_k, t_p, t_l = st.tabs(["Kategori", "Pemilik", "Label"])
+    with t_k:
+        daftar_sederhana("Kategori", "kategori", "Pengelompokan jenis barang, misalnya pakaian atau perawatan diri. "
+                         "Boleh dikosongkan kalau tidak diperlukan.")
+    with t_p:
+        halaman_pemilik()
+    with t_l:
+        halaman_kelola_label()
 if adalah_admin() and halaman == "Label QR":
     halaman_label()
 if adalah_admin() and halaman == "Ukuran data":
     halaman_ukuran()
-if adalah_admin() and halaman == "Titik pulih":
-    halaman_pulih()
-if adalah_admin() and halaman == "Cadangan dan pindah data":
-    cadangan()
+if adalah_admin() and halaman == "Cadangan dan pulihkan":
+    t_c, t_p = st.tabs(["Cadangan", "Titik pulih"])
+    with t_c:
+        cadangan()
+    with t_p:
+        halaman_pulih()
