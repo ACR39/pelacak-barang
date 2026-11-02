@@ -130,7 +130,7 @@ LABEL_FIELD = {"nama": "Nama", "jumlah": "Jumlah", "kategori": "Kategori", "loka
                "sublokasi": "Sub lokasi", "catatan": "Catatan", "harga": "Harga beli", "dibeli": "Tanggal beli", "kedaluwarsa": "Kedaluwarsa",
                "garansi": "Garansi", "habis": "Perlu beli", "minimum": "Stok minimum", "dalam": "Di dalam",
                "foto": "Foto", "dipakai": "Dipakai", "merek": "Merek", "ukuran": "Ukuran", "warna": "Warna",
-               "seri": "Nomor seri", "pemilik": "Pemilik", "galeri": "Foto tambahan", "barcode": "Barcode",
+               "seri": "Nomor seri", "pemilik": "Pemilik", "galeri": "Foto tambahan", "petak": "Petak", "barcode": "Barcode",
                "cek_tiap": "Cek berkala", "cek_terakhir": "Terakhir dicek",
                "dibawa": "Sedang dibawa sejak", "dibawa_ke": "Dibawa ke", "hilang": "Hilang sejak",
                "hilang_di": "Terakhir terlihat di", "tautan": "Tautan", "opname": "Terakhir diinventarisasi", "favorit": "Favorit", "tag": "Label"}

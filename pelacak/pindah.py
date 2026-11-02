@@ -19,7 +19,10 @@ def pindahkan_barang(pilih: list, by_id: dict, tl: str, ts: str) -> int:
     for i in pilih:
         b = by_id[i]
         dari = nama_tempat(b)
-        asal = {"lokasi": b.get("lokasi", ""), "sublokasi": b.get("sublokasi", ""), "dalam": b.get("dalam", "")}
+        asal = {"lokasi": b.get("lokasi", ""), "sublokasi": b.get("sublokasi", ""), "dalam": b.get("dalam", ""),
+                "petak": b.get("petak", "")}
+        if b.get("lokasi") != tl:
+            b.pop("petak", None)          # petak milik lokasi lama
         b["lokasi"] = tl
         if ts:
             b["sublokasi"] = ts
@@ -59,6 +62,10 @@ def batalkan_pindah(batch: dict) -> tuple:
             continue
         dari = nama_tempat(b)
         b["lokasi"] = d["lokasi"]
+        if d.get("petak"):
+            b["petak"] = d["petak"]
+        else:
+            b.pop("petak", None)
         if d["sublokasi"] and any(s["id"] == d["sublokasi"] and s["lokasi"] == d["lokasi"] for s in D["sublokasi"]):
             b["sublokasi"] = d["sublokasi"]
         else:

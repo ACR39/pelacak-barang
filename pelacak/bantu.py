@@ -558,7 +558,7 @@ def kartu_barang_html(b: dict, foto: bool = True) -> str:
                 ic = f'<img src="{_uri_bulat(b["foto"], dat)}" alt="">'
             except Exception:
                 pass
-    meta = [nama_tempat(b)] if "lokasi" not in sb else []
+    meta = [nama_tempat(b) + (f" › {b['petak']}" if b.get("petak") else "")] if "lokasi" not in sb else []
     if b.get("kategori") and "kategori" not in sb:
         meta.append(nama_kat(b))
     if harga_b(b) and "harga" not in sb:

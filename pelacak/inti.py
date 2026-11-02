@@ -46,6 +46,10 @@ CSS_GELAP = """
 [class*="st-key-hp_"] button{border-color:#7a3a36 !important;color:#fca5a5 !important}
 [class*="st-key-item_b_"] [data-testid="stHorizontalBlock"]{border-top-color:#2a3547 !important}
 .dgrup{color:#5ccf9c !important;border-bottom-color:#2a3547 !important}.dgrup span{color:#94a3b8 !important}
+.dpt{background:#1c2738 !important;border-color:#2a3547 !important;border-top-color:#34a874 !important}
+.dpt.kosong{background:#172131 !important;border-top-color:#3a4760 !important}.dpt.lain{background:#2a2416 !important;border-top-color:#c79330 !important}
+.dpt .dh1,.dpt .db{color:#f1f5f9 !important}.dpt .dh1 span{background:#1b2d27 !important;color:#5ccf9c !important}
+.dpt .db{border-bottom-color:#2a3547 !important}.dpt .db b{color:#5ccf9c !important}.dpt .db small,.dpt .dk{color:#94a3b8 !important}
 .sc-judul,.sc-val,.itm .jd,.itm .qt b,.perhatian,.brg{color:#f1f5f9 !important}
 .sc-val.m,.itm .qt b.merah{color:#f87171 !important}
 .sc-val.g{color:#4ade80 !important}
@@ -415,6 +419,15 @@ CSS_TERANG = """
 [class*="st-key-item_b_"] [data-testid="stColumn"]:first-child{flex:0 1 150px !important}
 [class*="st-key-kpakai_bl_"] button{background:#256b4a !important;border-color:#256b4a !important;color:#fff !important;font-weight:600}
 [class*="st-key-kpakai_bl_"] button p{color:#fff !important}
+/* Denah petak */
+.denah{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:.7rem;margin:.4rem 0}
+.dpt{background:#f7f9fb;border:1px solid #e3e7ee;border-top:3px solid #34a874;border-radius:12px;padding:.6rem .75rem;min-height:92px}
+.dpt.kosong{border-top-color:#cfd6e0;background:#fbfcfd}.dpt.lain{border-top-color:#e0a63a;background:#fffaf0}
+.dpt .dh1{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:.9rem;color:#111827;margin-bottom:.3rem}
+.dpt .dh1 span{background:#e8f3ec;color:#256b4a;border-radius:999px;font-size:.7rem;font-weight:700;padding:.05rem .5rem}
+.dpt .db{display:flex;justify-content:space-between;gap:.5rem;font-size:.82rem;padding:.2rem 0;border-bottom:1px solid #eef1f5;color:#1f2937}
+.dpt .db:last-child{border-bottom:0}.dpt .db b{color:#256b4a;font-weight:700}.dpt .db small{color:#6b7280}
+.dpt .dk{font-size:.78rem;color:#9aa3b2}
 </style>
 """
 

@@ -387,6 +387,15 @@ def halaman_barang():
                 sub = st.selectbox("Sub lokasi (boleh kosong)", ops_s, index=idx(ops_s, awal_s),
                                    key=f"br_sub_{mode}_{versi()}_{lok}",
                                    format_func=lambda i: "Tanpa sub lokasi" if not i else psub_f[i])
+            petak = ""
+            ptk = (next((l for l in D["lokasi"] if l["id"] == lok), {}) or {}).get("petak", [])
+            if ptk:
+                ops_p = [""] + list(ptk)
+                awal_p = b.get("petak", "") if b.get("lokasi") == lok else ""
+                petak = st.selectbox("Petak (boleh kosong)", ops_p, index=idx(ops_p, awal_p),
+                                     key=f"br_ptk_{mode}_{versi()}_{lok}",
+                                     format_func=lambda i: "Belum ditentukan" if not i else i,
+                                     help="Bagian di dalam lokasi ini, misalnya rak atas. Tampil di denah Jelajah lokasi.")
         ops_pem = [""] + daftar_pemilik() + ["__baru__"]
         pem_sel = st.selectbox("Pemilik (boleh kosong)", ops_pem, index=idx(ops_pem, b.get("pemilik", "")),
                                key=f"br_pem_{mode}_{versi()}",
@@ -529,7 +538,7 @@ def halaman_barang():
                         st.error(galat)
                     else:
                         baru = dict(b) if mode != "baru" else {"id": id_}
-                        isi = {"nama": nama, "lokasi": lok, "sublokasi": sub, "kategori": kat,
+                        isi = {"nama": nama, "lokasi": lok, "sublokasi": sub, "petak": petak, "kategori": kat,
                                "catatan": catatan.strip(), "harga": int(harga),
                                "tautan": "\n".join(s.strip() for s in tautan.splitlines() if s.strip()),
                                "dibeli": tb.isoformat() if tb else "",

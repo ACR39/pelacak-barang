@@ -264,6 +264,24 @@ def halaman_sublokasi():
                     selesai_simpan("Ditambahkan.", tb_sub=False)
 
 
+def simpan_petak(lok: dict, teks: str):
+    """Simpan daftar petak sebuah lokasi. Kalau jumlahnya sama, nama yang berubah ikut mengganti petak barangnya."""
+    lama = list(lok.get("petak", []))
+    baru = list(dict.fromkeys(s.strip()[:30] for s in teks.splitlines() if s.strip()))[:12]
+    if baru:
+        lok["petak"] = baru
+    else:
+        lok.pop("petak", None)
+    ganti = {a: b for a, b in zip(lama, baru) if a != b} if len(lama) == len(baru) else {}
+    for b in D["barang"]:
+        if b.get("lokasi") == lok["id"] and b.get("petak"):
+            p = ganti.get(b["petak"], b["petak"])
+            if p in baru:
+                b["petak"] = p
+            else:
+                b.pop("petak", None)
+
+
 def halaman_lokasi():
     """Lokasi (lemari, rak, kotak) berada di dalam satu tempat (rumah, kantor)."""
     pt = {t["id"]: t["nama"] for t in sorted(D["tempat"], key=lambda t: t["nama"].lower())}
@@ -288,12 +306,18 @@ def halaman_lokasi():
             if not milik:
                 st.caption("Belum ada lokasi.")
             for x in milik:
-                foto_up, hapus_f = None, False
+                foto_up, hapus_f, petak_in = None, False, ""
                 if st.session_state.get("edit_lokasi") == x["id"]:
                     foto_up = st.file_uploader(f"Foto {x['nama']} (boleh kosong)", type=["jpg", "jpeg", "png", "webp"],
                                                key=f"fu_lok_{x['id']}")
                     if x.get("foto"):
                         hapus_f = st.checkbox("Hapus foto yang sekarang", key=f"fh_lok_{x['id']}")
+                    petak_in = st.text_area("Petak untuk denah (satu per baris, boleh kosong)",
+                                            value="\n".join(x.get("petak", [])), key=f"pt_lok_{x['id']}", height=110,
+                                            max_chars=400, placeholder="Rak atas\nRak tengah\nRak bawah",
+                                            help="Bagian-bagian di dalam lokasi ini. Dipakai untuk denah di Jelajah lokasi "
+                                                 "dan pilihan Petak di form barang. Mengganti nama petak (dengan jumlah yang sama) "
+                                                 "ikut mengganti petak barangnya.")
                 c1, c2, c3 = st.columns([5, 1.8, 1.6], vertical_alignment="center")
                 if st.session_state.get("edit_lokasi") == x["id"]:
                     e1, e2 = c1.columns([3, 2])
@@ -328,6 +352,7 @@ def halaman_lokasi():
                                     x["tempat"] = tbaru
                                 else:
                                     x.pop("tempat", None)
+                                simpan_petak(x, petak_in)
                                 ganti = foto_lama if x.get("foto", "") != foto_lama else ""
                                 selesai_simpan("Lokasi diubah.",
                                                sesudah=(lambda p=ganti: hapus_foto(p)) if ganti else None,

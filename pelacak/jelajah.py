@@ -3,7 +3,9 @@ import html
 
 import streamlit as st
 
-from pelacak.bantu import induk_dari, isi_dari, jumlah_b, lencana, saring_barang, sub_dari
+from pelacak.bantu import (
+    daftar_lokasi, induk_dari, isi_dari, jumlah_b, lencana, nama_lok, saring_barang, sub_dari,
+)
 from pelacak.inti import D, TANPA, TGL_MAX, TGL_MIN, fmt_waktu
 
 
@@ -71,6 +73,49 @@ def _html_grup(judul: str, isi: list, buka: bool, anak: str = "", n_anak: int = 
             f'<span class="pc">{n} barang</span></summary><div class="pb">{badan}</div></details>')
 
 
+def _html_denah(l: dict, barang: list) -> str:
+    """Denah satu lokasi: satu kotak per petak, lalu kotak barang yang belum ditempatkan."""
+    petak = l.get("petak", [])
+    milik = [b for b in barang if b.get("lokasi") == l["id"]]
+
+    def baris(b):
+        sl = sub_dari(b)
+        ket = f' <small>· {html.escape(sl["nama"])}</small>' if sl else ""
+        return f'<div class="db"><span>{html.escape(b["nama"])}{ket}</span><b>{jumlah_b(b)}</b></div>'
+
+    def kotak(judul, isi, kls=""):
+        n = sum(jumlah_b(b) for b in isi)
+        badan = "".join(baris(b) for b in isi) or '<div class="dk">Kosong</div>'
+        kelas = (" " + kls if kls else "") + (" kosong" if not isi and not kls else "")
+        return (f'<div class="dpt{kelas}"><div class="dh1"><div>{html.escape(judul)}</div>'
+                f'<span>{n}</span></div>{badan}</div>')
+
+    h = [kotak(p, [b for b in milik if b.get("petak") == p]) for p in petak]
+    sisa = [b for b in milik if b.get("petak") not in petak]
+    if sisa or not petak:
+        h.append(kotak("Belum ditempatkan" if petak else "Isi lokasi", sisa, "lain"))
+    return f'<div class="denah">{"".join(h)}</div>'
+
+
+def _tampil_denah(atas: list, q: str):
+    lok = sorted(daftar_lokasi(), key=lambda l: (not l.get("petak"), nama_lok(l).lower()))
+    if not lok:
+        st.info("Belum ada lokasi. Buat dulu di Pengaturan > Tempat dan lokasi.")
+        return
+    peta = {l["id"]: l for l in lok}
+    if st.session_state.get("jl_lok") not in peta:
+        st.session_state.jl_lok = lok[0]["id"]
+    pid = st.selectbox("Lokasi", list(peta), key="jl_lok",
+                       format_func=lambda i: nama_lok(peta[i]) + (f" · {len(peta[i]['petak'])} petak" if peta[i].get("petak") else ""))
+    l = peta[pid]
+    if not l.get("petak"):
+        st.caption("Lokasi ini belum punya petak, jadi semua isinya ada di satu kotak. "
+                   "Tambahkan petak lewat Pengaturan > Tempat dan lokasi > Lokasi > Ubah.")
+    elif q:
+        st.caption("Hanya barang yang cocok dengan pencarian yang tampil di denah.")
+    st.markdown(_html_denah(l, atas), unsafe_allow_html=True)
+
+
 def halaman_jelajah():
     atas = [b for b in D["barang"] if not induk_dari(b)]      # isi barang ditampilkan di bawah induknya
     with st.container(key="kartu_barang"):
@@ -78,9 +123,14 @@ def halaman_jelajah():
         q = " ".join(kq.text_input("Pencarian", key="jl_q", icon=":material/search:",
                                    placeholder="Cari barang di semua lokasi...",
                                    label_visibility="collapsed").lower().split())
-        buka_semua = kb.toggle("Buka semua", key="jl_buka")
+        mode = st.segmented_control("Tampilan", ["Daftar", "Denah"], default="Daftar", key="jl_mode",
+                                    label_visibility="collapsed") or "Daftar"
+        buka_semua = kb.toggle("Buka semua", key="jl_buka", disabled=mode == "Denah")
         if q:
             atas, _mirip_n = saring_barang(atas, q)
+        if mode == "Denah":
+            _tampil_denah(atas, q)
+            return
         buka = bool(q) or buka_semua
         if not D["tempat"] and not D["lokasi"]:
             st.info("Belum ada tempat atau lokasi. Buat dulu di menu Pengaturan.")
