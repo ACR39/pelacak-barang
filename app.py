@@ -941,7 +941,7 @@ def pindah_halaman(h: str):
     st.session_state.halaman = h
     for k in ("br_mode", "br_hapus", "sp_hapus", "sp_kosong", "pj_hapus", "pj_mode", "rc_mode", "rc_hapus", "bl_mode", "bm_buang", "db_mode", "hl_mode", "hl_ketemu", "pk_hapus", "sc_n", "op_rencana", "serupa_ok",
               "edit_tempat", "hapus_tempat", "edit_kategori", "hapus_kategori",
-              "edit_lokasi", "hapus_lokasi", "edit_sub", "hapus_sub"):
+              "edit_lokasi", "hapus_lokasi", "edit_sub", "hapus_sub", "edit_pemilik", "hapus_pemilik"):
         st.session_state.pop(k, None)
 
 
@@ -1518,12 +1518,12 @@ if not cfg_github():
                "dimulai ulang. Isi pengaturan GitHub (lihat README) agar data permanen.")
 
 UTAMA = ["Cari barang", "Scan barcode", "Jelajah lokasi", "Kelola barang", "Pindah massal", "Inventaris ulang", "Riwayat perpindahan", "Riwayat aktivitas",
-         "Impor barang", "Ekspor daftar", "Tempat sampah"]
+         "Tempat sampah"]
 PANTAU = ["Pinjam-meminjam", "Dibawa dan hilang", "Belanja", "Daftar bawaan", "Jarang dipakai",
           "Kedaluwarsa dan garansi", "Pengingat berkala", "Nilai barang", "Statistik"]
-MASTER = ["Tempat", "Lokasi", "Sub lokasi", "Kategori", "Label QR", "Ukuran data", "Titik pulih",
+MASTER = ["Tempat", "Lokasi", "Sub lokasi", "Kategori", "Pemilik", "Label QR", "Ukuran data", "Titik pulih",
           "Cadangan dan pindah data"]
-PENGATURAN = ["Tampilan Beranda", "Tampilan kartu"] + (MASTER if adalah_admin() else [])
+PENGATURAN = ["Tampilan Beranda", "Tampilan kartu", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
 HALAMAN = ["Beranda"] + UTAMA + PANTAU + PENGATURAN
 if st.session_state.get("halaman") not in HALAMAN:
     st.session_state.halaman = "Beranda"
@@ -1533,8 +1533,8 @@ IKON = {"Beranda": "home", "Cari barang": "search", "Kelola barang": "inventory_
         "Pinjam-meminjam": "handshake", "Dibawa dan hilang": "backpack", "Belanja": "shopping_cart",
         "Daftar bawaan": "luggage", "Jarang dipakai": "schedule",
         "Kedaluwarsa dan garansi": "event_busy", "Nilai barang": "payments", "Pengingat berkala": "notifications_active",
-        "Scan barcode": "barcode_scanner", "Impor barang": "upload_file", "Inventaris ulang": "fact_check", "Statistik": "bar_chart", "Ekspor daftar": "file_download", "Tampilan Beranda": "tune", "Tampilan kartu": "view_agenda",
-        "Tempat": "home_work", "Lokasi": "place", "Sub lokasi": "account_tree", "Kategori": "sell",
+        "Scan barcode": "barcode_scanner", "Inventaris ulang": "fact_check", "Statistik": "bar_chart", "Ekspor dan impor": "import_export", "Tampilan Beranda": "tune", "Tampilan kartu": "view_agenda",
+        "Tempat": "home_work", "Lokasi": "place", "Sub lokasi": "account_tree", "Kategori": "sell", "Pemilik": "person",
         "Label QR": "qr_code_2", "Ukuran data": "database", "Titik pulih": "restore",
         "Cadangan dan pindah data": "backup"}
 LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg">'
@@ -1586,8 +1586,7 @@ DESKRIPSI = {
     "Kelola barang": "Tambah, ubah, atau hapus barang beserta lokasi, foto, dan tanggalnya.",
     "Pindah massal": "Pindahkan banyak barang sekaligus ke lokasi lain, misalnya saat membereskan kotak.",
     "Inventaris ulang": "Cocokkan isi satu lokasi dengan keadaan sebenarnya: centang yang ada, koreksi jumlah, tandai yang hilang.",
-    "Statistik": "Barang yang sering pindah, lokasi paling penuh, barang lama tak disentuh, dan kelengkapan data.",
-    "Impor barang": "Tambah banyak barang sekaligus dari file Excel atau CSV, dengan pratinjau sebelum disimpan.",
+    "Statistik": "Barang yang sering pindah, jumlah buah per lokasi, aktivitas bulanan, per pemilik, dan kelengkapan data.",
     "Riwayat perpindahan": "Catatan otomatis kapan dan dari mana ke mana barang dipindah.",
     "Dibawa dan hilang": "Barang yang sedang kamu bawa keluar, dan barang yang belum ketemu.",
     "Ukuran data": "Pantau besar data dan foto di penyimpanan, dan bersihkan foto yang tidak terpakai.",
@@ -1603,13 +1602,14 @@ DESKRIPSI = {
     "Nilai barang": "Total nilai barang berdasarkan harga beli.",
     "Pengingat berkala": "Barang yang perlu dicek rutin, misalnya baterai cadangan atau alat P3K.",
     "Scan barcode": "Foto barcode di kemasan untuk menemukan barang, atau menambahkannya dengan nama yang terisi otomatis.",
-    "Ekspor daftar": "Unduh daftar barang sebagai Excel atau PDF yang rapi untuk dicetak.",
+    "Ekspor dan impor": "Unduh daftar barang sebagai Excel atau PDF untuk dicetak, atau tambah banyak barang sekaligus dari file Excel atau CSV.",
     "Tampilan kartu": "Pilih keterangan apa yang tampil di kartu barang, misalnya lokasi dan harga saja.",
     "Tampilan Beranda": "Pilih kartu mana yang tampil di Beranda. Berlaku untuk perangkat ini.",
     "Tempat": "Tingkat pertama: rumah atau kantor tempat barang disimpan.",
     "Lokasi": "Tingkat kedua: lemari, rak, atau kotak di dalam satu tempat.",
     "Sub lokasi": "Tingkat ketiga: bagian di dalam lokasi, misalnya laci 2 atau rak atas.",
     "Kategori": "Pengelompokan jenis barang.",
+    "Pemilik": "Daftar pemilik barang. Ubah nama atau gabungkan pemilik yang tertulis ganda.",
     "Label QR": "Cetak label QR untuk ditempel di lemari atau kotak. Dipindai, langsung muncul isinya.",
     "Cadangan dan pindah data": "Unduh cadangan data atau muat data dari berkas.",
 }
@@ -2403,9 +2403,6 @@ def halaman_barang():
                     st.image(dat, width=140)
             upl = st.file_uploader("Foto barang (boleh kosong)", type=["jpg", "jpeg", "png", "webp"],
                                    help="Foto dikecilkan otomatis supaya hemat tempat.")
-            with st.expander("Atau ambil foto dengan kamera"):
-                kam = st.camera_input("Kamera", label_visibility="collapsed",
-                                      help="Izinkan akses kamera di peramban. Kalau ada foto dari kamera, itu yang dipakai.")
             hapus_cb = st.checkbox("Hapus foto yang sekarang") if foto_lama else False
             galeri_lama, hapus_g = list(b.get("galeri", [])), []
             if galeri_lama:
@@ -2447,7 +2444,7 @@ def halaman_barang():
                 else:
                     id_ = b.get("id") or uuid.uuid4().hex[:8]
                     foto_baru, galat = "", ""
-                    sumber = kam if kam is not None else upl
+                    sumber = upl
                     if sumber is not None:
                         try:
                             foto_baru = simpan_foto(id_, sumber.getvalue())
@@ -4174,6 +4171,54 @@ def halaman_lokasi():
                     selesai_simpan("Ditambahkan.")
 
 
+def semua_barang_pemilik() -> list:
+    """Barang aktif dan barang di tempat sampah, supaya nama pemilik ikut berubah di keduanya."""
+    return D["barang"] + [x["barang"] for x in D["sampah"]]
+
+
+def halaman_pemilik():
+    """Daftar pemilik diambil dari barang. Di sini nama bisa diubah, digabung, atau dilepas dari barangnya."""
+    nama_nama = daftar_pemilik()
+    with st.expander(f"Pemilik ({len(nama_nama)})", expanded=True):
+        st.caption("Pemilik muncul otomatis dari barang yang diisi pemiliknya. Mengubah nama ikut mengganti semua barangnya. "
+                   "Kalau namanya sama dengan pemilik lain, keduanya digabung. Menghapus pemilik tidak menghapus barangnya.")
+        if not nama_nama:
+            st.write("Belum ada pemilik. Isi pemilik lewat Kelola barang.")
+        for nm in nama_nama:
+            n_b = sum(1 for b in D["barang"] if b.get("pemilik") == nm)
+            kunci = hashlib.md5(nm.encode("utf-8")).hexdigest()[:10]
+            c1, c2, c3 = st.columns([5, 1.8, 1.6], vertical_alignment="center")
+            if st.session_state.get("edit_pemilik") == nm:
+                baru = c1.text_input("Nama", value=nm, key=f"nm_pem_{kunci}", label_visibility="collapsed", max_chars=40)
+                c3.button("Batal", key=f"bt_pem_{kunci}", on_click=atur, args=("edit_pemilik", None))
+                if c2.button("Simpan", key=f"sv_pem_{kunci}", type="primary"):
+                    baru = baru.strip()
+                    if not baru:
+                        st.error("Nama tidak boleh kosong.")
+                    elif baru == nm:
+                        st.session_state.edit_pemilik = None
+                        st.rerun()
+                    else:
+                        lain = next((x for x in nama_nama if x != nm and x.lower() == baru.lower()), None)
+                        akhir = lain or baru          # kalau sudah ada pemilik serupa, pakai ejaan yang sudah ada
+                        for b in semua_barang_pemilik():
+                            if b.get("pemilik") == nm:
+                                b["pemilik"] = akhir
+                        selesai_simpan(f"Digabung ke {akhir}." if lain else "Nama pemilik diubah.", edit_pemilik=None)
+            elif st.session_state.get("hapus_pemilik") == nm:
+                c1.write(f"Hapus pemilik **{nm}**?" + (f" ({n_b} barang jadi tanpa pemilik)" if n_b else ""))
+                c3.button("Batal", key=f"bh_pem_{kunci}", on_click=atur, args=("hapus_pemilik", None))
+                if c2.button("Ya, hapus", key=f"yh_pem_{kunci}", type="primary"):
+                    for b in semua_barang_pemilik():
+                        if b.get("pemilik") == nm:
+                            b.pop("pemilik", None)
+                    selesai_simpan("Pemilik dihapus.", hapus_pemilik=None)
+            else:
+                c1.write(f"{nm} · {n_b} barang")
+                c2.button("Ubah nama", key=f"ub_pem_{kunci}", on_click=atur, args=("edit_pemilik", nm))
+                c3.button("Hapus", key=f"hp_pem_{kunci}", on_click=atur, args=("hapus_pemilik", nm))
+
+
 def cadangan():
     with st.expander("Cadangan dan pindah data", expanded=True):
         st.caption("Unduh seluruh data sebagai file, atau muat file data dari tempat lain. "
@@ -4921,13 +4966,6 @@ def halaman_statistik():
         st.info("Belum ada barang, jadi belum ada yang bisa dihitung.")
         return
     pindah = [x for x in D["riwayat"] if x.get("dari")]
-    with st.container(key="kartu_g_s1"):
-        st.markdown("**Gambaran umum**")
-        st.markdown(
-            _baris_stat("Jenis barang", f"{len(brg)} jenis, {sum(jumlah_b(b) for b in brg)} buah")
-            + _baris_stat("Perpindahan tercatat", f"{len(pindah)} kali")
-            + _baris_stat("Aktivitas tercatat", f"{len(D['aktivitas'])} catatan"), unsafe_allow_html=True)
-
     with st.container(key="kartu_g_s2"):
         st.markdown("**Barang yang paling sering pindah**")
         hitung = {}
@@ -4935,8 +4973,7 @@ def halaman_statistik():
             kunci = x.get("barang") or x.get("nama", "")
             hitung[kunci] = hitung.get(kunci, [0, x.get("nama", "")])
             hitung[kunci][0] += 1
-        if not hitung:
-            st.caption("Belum ada barang yang pernah dipindah.")
+        st.caption(f"{len(pindah)} perpindahan tercatat" if pindah else "Belum ada barang yang pernah dipindah.")
         by = {b["id"]: b for b in brg}
         for kunci, (n, nama) in sorted(hitung.items(), key=lambda kv: -kv[1][0])[:8]:
             b = by.get(kunci)
@@ -4945,28 +4982,18 @@ def halaman_statistik():
                         unsafe_allow_html=True)
 
     with st.container(key="kartu_g_s3"):
-        st.markdown("**Lokasi yang paling penuh**")
+        st.markdown("**Jumlah buah per lokasi**")
         per = {}
         for b in brg:
             p = per.setdefault(nama_lokasi(b), [0, 0])
             p[0] += 1
             p[1] += jumlah_b(b)
-        top = sorted(per.items(), key=lambda kv: -kv[1][0])[:10]
-        st.bar_chart(pd.DataFrame({"Lokasi": [k for k, _ in top], "Jenis barang": [v[0] for _, v in top]}),
-                     x="Lokasi", y="Jenis barang", horizontal=True, sort="-Jenis barang", color="#2b7a57",
+        top = sorted(per.items(), key=lambda kv: -kv[1][1])[:10]
+        st.bar_chart(pd.DataFrame({"Lokasi": [k for k, _ in top], "Jumlah buah": [v[1] for _, v in top]}),
+                     x="Lokasi", y="Jumlah buah", horizontal=True, sort="-Jumlah buah", color="#2b7a57",
                      height=max(160, 38 * len(top)))
-        st.caption("Jumlah buah: " + "; ".join(f"{k} {v[1]}" for k, v in top[:5]))
-
-    with st.container(key="kartu_g_s4"):
-        st.markdown("**Paling lama tidak disentuh**")
-        lama = []
-        for b in brg:
-            ref = iso_ke_date(b.get("dipakai")) or iso_ke_date(b.get("diubah"))
-            if ref:
-                lama.append(((hari_ini() - ref).days, b))
-        for hari, b in sorted(lama, key=lambda x: -x[0])[:8]:
-            st.markdown(_baris_stat(b["nama"], f"{hari} hari · {html.escape(nama_tempat(b))}"), unsafe_allow_html=True)
-        st.caption("Dihitung dari tanggal dipakai, atau terakhir diubah kalau belum pernah dicatat dipakai.")
+        st.caption(f"Total {sum(v[1] for v in per.values())} buah di {len(per)} lokasi. "
+                   "Jumlah jenis barang per lokasi ada di grafik Beranda.")
 
     with st.container(key="kartu_g_s5"):
         st.markdown("**Aktivitas 6 bulan terakhir**")
@@ -4983,6 +5010,7 @@ def halaman_statistik():
             if x.get("waktu", "")[:7] in cacah:
                 cacah[x["waktu"][:7]] += 1
             orang[x.get("oleh", "")] = orang.get(x.get("oleh", ""), 0) + 1
+        st.caption(f"{len(D['aktivitas'])} aktivitas tercatat seluruhnya.")
         if not any(cacah.values()):
             st.caption("Belum ada aktivitas dalam 6 bulan terakhir.")
         else:
@@ -5257,7 +5285,7 @@ def buat_templat_impor() -> bytes:
 
 
 def halaman_impor():
-    with st.container(key="kartu_barang"):
+    with st.container(key="kartu_g_impor"):
         st.caption("Isi daftar barang di Excel atau CSV, lalu unggah di sini. Kamu akan melihat pratinjau dulu "
                    "sebelum apa pun disimpan.")
         try:
@@ -5314,8 +5342,6 @@ def halaman_impor():
 
 if halaman == "Kelola barang":
     halaman_barang()
-if halaman == "Impor barang":
-    halaman_impor()
 if halaman == "Inventaris ulang":
     halaman_opname()
 if halaman == "Statistik":
@@ -5344,8 +5370,12 @@ if halaman == "Pengingat berkala":
     halaman_pengingat()
 if halaman == "Scan barcode":
     halaman_scan()
-if halaman == "Ekspor daftar":
-    halaman_ekspor()
+if halaman == "Ekspor dan impor":
+    t_ekspor, t_impor = st.tabs(["Ekspor", "Impor"])
+    with t_ekspor:
+        halaman_ekspor()
+    with t_impor:
+        halaman_impor()
 if halaman == "Tampilan Beranda":
     halaman_tampilan()
 if halaman == "Tampilan kartu":
@@ -5364,6 +5394,8 @@ if adalah_admin() and halaman == "Sub lokasi":
 if adalah_admin() and halaman == "Kategori":
     daftar_sederhana("Kategori", "kategori", "Pengelompokan jenis barang, misalnya pakaian atau perawatan diri. "
                      "Boleh dikosongkan kalau tidak diperlukan.")
+if adalah_admin() and halaman == "Pemilik":
+    halaman_pemilik()
 if adalah_admin() and halaman == "Label QR":
     halaman_label()
 if adalah_admin() and halaman == "Ukuran data":
