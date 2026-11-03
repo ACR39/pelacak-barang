@@ -59,10 +59,12 @@ def halaman_tampilan_kartu():
                    "Nama, foto, dan lencana status tetap tampil. Pilihan ini berlaku di perangkat ini.")
         for k, lab in SEKSI_KARTU:
             st.checkbox(lab, value=k not in sembunyi, key=f"ks_{k}", on_change=ubah_kartu)
+        st.caption("Harga: centang keduanya untuk menampilkan harga asli dan harga setelah diskon, "
+                   "centang salah satu untuk menampilkan itu saja, atau kosongkan keduanya untuk menyembunyikan harga.")
         c1, c2, c3 = st.columns(3)
         c1.button("Tampilkan semua", key="ks_semua", on_click=atur_kartu, args=([],), use_container_width=True)
         c2.button("Lokasi dan harga saja", key="ks_lh", on_click=atur_kartu,
-                  args=([k for k, _ in SEKSI_KARTU if k not in ("lokasi", "harga", "jumlah")],), use_container_width=True)
+                  args=([k for k, _ in SEKSI_KARTU if k not in ("lokasi", "harga", "harga_asli", "jumlah")],), use_container_width=True)
         c3.button("Hanya lokasi", key="ks_l", on_click=atur_kartu,
                   args=([k for k, _ in SEKSI_KARTU if k != "lokasi"],), use_container_width=True)
         tombol_bersama("kartu", st.session_state.kartu_sembunyi, atur_kartu)

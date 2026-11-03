@@ -529,8 +529,8 @@ def html_nama_foto(x: dict) -> str:
     return f'<div style="padding:.3rem 0">{nama}</div>'
 
 
-SEKSI_KARTU = [("lokasi", "Lokasi"), ("kategori", "Kategori"), ("harga", "Harga setelah diskon"),
-               ("diskon", "Harga asli dan persen diskon (di samping harga)"),
+SEKSI_KARTU = [("lokasi", "Lokasi"), ("kategori", "Kategori"), ("harga", "Harga setelah diskon (harga yang dibayar)"),
+               ("harga_asli", "Harga asli (sebelum diskon) dan persen diskon"),
                ("jumlah", "Jumlah (angka besar di kanan)"), ("tanggal", "Tanggal (dibeli, kedaluwarsa, garansi, dipakai, diinventarisasi)"),
                ("pemilik", "Pemilik"), ("atribut", "Merek, ukuran, warna, nomor seri"),
                ("hubungan", "Di dalam atau berisi barang lain"), ("catatan", "Catatan"), ("tautan", "Tautan"), ("label", "Label")]
@@ -564,6 +564,26 @@ def atur_kartu(sembunyi: list):
     ubah_kartu()
 
 
+def _rp_titik(n: int) -> str:
+    return "Rp " + f"{n:,}".replace(",", ".")
+
+
+def _teks_harga(b: dict, tampil_beli: bool, tampil_asli: bool) -> str:
+    """Teks harga di kartu: setelah diskon saja, asli saja, atau keduanya (dengan persen diskon)."""
+    beli, asli = harga_b(b), harga_asli_b(b)
+    if not (beli or asli):
+        return ""
+    if tampil_beli and tampil_asli:
+        if beli and asli and diskon_persen(b):
+            return f"{_rp_titik(beli)} (asli {_rp_titik(asli)}, diskon {diskon_persen(b)}%)"
+        return _rp_titik(beli or asli)
+    if tampil_beli:
+        return _rp_titik(beli) if beli else ""
+    if tampil_asli:
+        return _rp_titik(asli or beli)       # tanpa harga asli, harga yang dibayar dianggap harga asli
+    return ""
+
+
 def kartu_barang_html(b: dict, foto: bool = True) -> str:
     """Satu kartu barang: ikon/foto bulat, nama, keterangan, jumlah besar di kanan."""
     sb = muat_kartu_sembunyi()
@@ -578,13 +598,9 @@ def kartu_barang_html(b: dict, foto: bool = True) -> str:
     meta = [nama_tempat(b) + (f" › {b['petak']}" if b.get("petak") else "")] if "lokasi" not in sb else []
     if b.get("kategori") and "kategori" not in sb:
         meta.append(nama_kat(b))
-    if harga_b(b) and "harga" not in sb:
-        teks_h = "Rp " + f"{harga_b(b):,}".replace(",", ".")
-        if diskon_persen(b) and "diskon" not in sb:
-            teks_h += f" (asli Rp {harga_asli_b(b):,}, diskon {diskon_persen(b)}%)".replace(",", ".")
+    teks_h = _teks_harga(b, "harga" not in sb, "harga_asli" not in sb)
+    if teks_h:
         meta.append(teks_h)
-    elif harga_asli_b(b) and not harga_b(b) and "harga" not in sb and "diskon" not in sb:
-        meta.append("Harga asli Rp " + f"{harga_asli_b(b):,}".replace(",", "."))
     ekstra = []
     if b.get("dibeli") and "tanggal" not in sb:
         ekstra.append(f"Dibeli: {fmt_iso(b['dibeli'])}")
