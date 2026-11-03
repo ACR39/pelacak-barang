@@ -21,7 +21,7 @@ from pelacak.master import (
 )
 from pelacak.opname import halaman_opname
 from pelacak.pemeliharaan import halaman_pulih, halaman_ukuran
-from pelacak.pengingat import halaman_pengingat
+from pelacak.pengingat import halaman_ganti, halaman_pengingat
 from pelacak.penyimpanan import ambil_snap, muat_ke_sesi
 from pelacak.pindah import halaman_pindah
 from pelacak.pinjam import halaman_pinjam
@@ -264,13 +264,15 @@ def tampilkan_halaman(halaman):
         with t_n:
             halaman_nilai()
     if halaman == "Jatuh tempo":
-        t_k, t_g, t_c = st.tabs(["Kedaluwarsa", "Garansi", "Cek berkala"])
+        t_k, t_g, t_c, t_a = st.tabs(["Kedaluwarsa", "Garansi", "Cek berkala", "Waktu ganti"])
         with t_k:
             _tabel_tanggal("kedaluwarsa", "Kedaluwarsa")
         with t_g:
             _tabel_tanggal("garansi", "Garansi sampai")
         with t_c:
             halaman_pengingat()
+        with t_a:
+            halaman_ganti()
     if halaman == "Tampilan":
         t_b, t_k = st.tabs(["Beranda", "Kartu barang"])
         with t_b:

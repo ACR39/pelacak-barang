@@ -5,7 +5,7 @@ import streamlit as st
 
 from pelacak.bantu import (
     daftar_tautan, diskon_persen, harga_asli_b, harga_b, jumlah_b, lokasi_dari, nama_kat, nama_lokasi, nama_tempat,
-    perlu_beli, sub_dari, versi,
+    perlu_beli, sub_dari, umur_teks, versi,
 )
 from pelacak.inti import D, fmt_iso, hari_ini, rp
 
@@ -38,6 +38,9 @@ KOLOM_EKSPOR = {
     "harga_asli": ("Harga asli", lambda b: harga_asli_b(b) or "", 2.4, True),
     "harga": ("Harga setelah diskon", lambda b: harga_b(b) or "", 2.4, True),
     "diskon": ("Diskon", lambda b: f"{diskon_persen(b)}%" if diskon_persen(b) else "", 1.6, True),
+    "toko": ("Beli di", lambda b: b.get("toko", ""), 2.6, False),
+    "nota": ("Nomor nota", lambda b: b.get("nota", ""), 2.4, False),
+    "umur": ("Umur", lambda b: umur_teks(b), 1.8, False),
     "kedaluwarsa": ("Kedaluwarsa", lambda b: fmt_iso(b.get("kedaluwarsa", "")), 2.2, False),
     "garansi": ("Garansi sampai", lambda b: fmt_iso(b.get("garansi", "")), 2.2, False),
     "catatan": ("Catatan", lambda b: b.get("catatan", ""), 5, False),

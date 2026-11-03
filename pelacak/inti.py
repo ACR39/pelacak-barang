@@ -492,6 +492,14 @@ def adalah_admin() -> bool:
     return u is None or u.get("peran") == "admin"   # tanpa login = mode uji coba
 
 
+GANTI_OPSI = [0, 90, 180, 365, 730, 1095, 1825]
+
+
+def teks_ganti(n) -> str:
+    return {0: "Tidak ada", 90: "Tiap 3 bulan", 180: "Tiap 6 bulan", 365: "Tiap 1 tahun", 730: "Tiap 2 tahun",
+            1095: "Tiap 3 tahun", 1825: "Tiap 5 tahun"}.get(int(n or 0), f"Tiap {int(n or 0)} hari")
+
+
 def teks_cek(n) -> str:
     return {0: "Tidak ada", 30: "Tiap 1 bulan", 60: "Tiap 2 bulan", 90: "Tiap 3 bulan",
             180: "Tiap 6 bulan", 365: "Tiap 1 tahun"}.get(int(n or 0), f"Tiap {int(n or 0)} hari")

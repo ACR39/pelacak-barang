@@ -15,13 +15,15 @@ from pelacak.inti import D, TGL_MAX, TGL_MIN, adalah_admin, hari_ini
 KOLOM_IMPOR = [("nama", "Nama barang"), ("jumlah", "Jumlah"), ("tempat", "Tempat"), ("lokasi", "Lokasi"),
                ("sub", "Sub lokasi"), ("kategori", "Kategori"), ("pemilik", "Pemilik"), ("merek", "Merek"),
                ("ukuran", "Ukuran"), ("warna", "Warna"), ("seri", "Nomor seri"), ("barcode", "Barcode"),
-               ("harga_asli", "Harga asli"), ("harga", "Harga setelah diskon"), ("dibeli", "Tanggal beli"), ("kedaluwarsa", "Kedaluwarsa"),
+               ("harga_asli", "Harga asli"), ("harga", "Harga setelah diskon"), ("dibeli", "Tanggal beli"),
+               ("toko", "Beli di"), ("nota", "Nomor nota"), ("kedaluwarsa", "Kedaluwarsa"),
                ("garansi", "Garansi sampai"), ("label", "Label"), ("catatan", "Catatan"), ("tautan", "Tautan"),
                ("favorit", "Favorit")]
 
 
 ALIAS_IMPOR = {"nama": ["nama", "barang"], "sub": ["sublokasi", "sub"], "harga": ["harga", "harga beli", "harga diskon"],
                "harga_asli": ["harga sebelum diskon", "harga normal"], "dibeli": ["dibeli"],
+               "toko": ["toko", "tempat beli", "dibeli di"], "nota": ["nota", "no nota"],
                "garansi": ["garansi"], "seri": ["seri", "no seri"], "label": ["tag", "labels"],
                "kedaluwarsa": ["expired", "exp"]}
 
@@ -218,6 +220,9 @@ def terapkan_impor(baris: list, buat: bool, lewati: bool):
         for k in ("pemilik", "merek", "ukuran", "warna", "seri", "barcode", "catatan"):
             if r[k]:
                 b[k] = r[k]
+        for k, mx in (("toko", 80), ("nota", 60)):
+            if r[k]:
+                b[k] = r[k][:mx]
         if info["harga"]:
             b["harga"] = info["harga"]
         if info["harga_asli"]:

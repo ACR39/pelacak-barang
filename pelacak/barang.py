@@ -7,7 +7,7 @@ import streamlit as st
 
 from pelacak.bantu import (
     ATRIBUT, MAKS_GALERI, MAKS_LAMPIRAN, MAKS_LAMPIRAN_MB, _norm_nama, atur, buang_barang,
-    catat, daftar_lokasi, daftar_pemilik, daftar_tag, harga_asli_b, harga_b, idx, induk_dari, isi_dari,
+    catat, daftar_lokasi, daftar_pemilik, daftar_tag, ganti_tiap_b, harga_asli_b, harga_b, idx, induk_dari, isi_dari,
     jumlah_b, kartu_barang_html, keturunan, lencana, lokasi_dari, minimum_b, nama_kat, nama_lok,
     nama_tempat, peringatan_serupa, pesan_hapus_barang, saring_barang, selesai_simpan,
     sinkron_isi, sub_dari, tampil_foto_kecil, tampil_galeri, tampil_lampiran, tempat_dari_lok,
@@ -15,7 +15,7 @@ from pelacak.bantu import (
 )
 from pelacak.beranda import CEK_OPSI, cek_tiap_b
 from pelacak.inti import (
-    D, TANPA_KAT, TGL_MAX, TGL_MIN, adalah_admin, hari_ini, iso_ke_date, teks_cek,
+    D, GANTI_OPSI, TANPA_KAT, TGL_MAX, TGL_MIN, adalah_admin, hari_ini, iso_ke_date, teks_cek, teks_ganti,
 )
 from pelacak.penyimpanan import _tulis_foto, ambil_foto, hapus_foto, simpan_foto
 
@@ -422,6 +422,11 @@ def halaman_barang():
             tb = st.date_input("Tanggal pembelian (boleh kosong)", value=iso_ke_date(b.get("dibeli")),
                                min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY",
                                help="Berguna untuk menghitung masa garansi dan umur barang.")
+            t1_, t2_ = st.columns(2)
+            toko = t1_.text_input("Beli di (toko, boleh kosong)", value=b.get("toko", ""), max_chars=80,
+                                  placeholder="Contoh: Tokopedia, Toko Maju Jaya")
+            nota = t2_.text_input("Nomor nota (boleh kosong)", value=b.get("nota", ""), max_chars=60,
+                                  help="Berguna untuk klaim garansi atau retur.")
             if harga_asli and harga and harga < harga_asli:
                 pct = int(round((harga_asli - harga) * 100 / harga_asli))
                 st.caption(f"Diskon {pct}% · hemat Rp {harga_asli - harga:,} per buah".replace(",", "."))
@@ -438,8 +443,9 @@ def halaman_barang():
             minimum = st.number_input("Stok minimum", min_value=0, value=minimum_b(b), step=1,
                                       help="Kalau jumlah sudah sampai angka ini atau kurang, barang otomatis "
                                            "masuk daftar Perlu beli. Isi 0 kalau tidak dipantau.")
-            with st.expander("Detail tambahan (merek, ukuran, warna, nomor seri, barcode, cek berkala)",
-                             expanded=any(b.get(k) for k, _ in ATRIBUT) or bool(b.get("barcode") or b.get("cek_tiap"))):
+            with st.expander("Detail tambahan (merek, ukuran, warna, nomor seri, barcode, cek berkala, ganti berkala)",
+                             expanded=any(b.get(k) for k, _ in ATRIBUT)
+                             or bool(b.get("barcode") or b.get("cek_tiap") or b.get("ganti_tiap"))):
                 a1, a2 = st.columns(2)
                 a3, a4 = st.columns(2)
                 nilai_atr = {}
@@ -451,6 +457,13 @@ def halaman_barang():
                                            help="Atau pasang lewat menu Scan barcode.")
                 cek_in = a6.selectbox("Cek berkala", CEK_OPSI, index=idx(CEK_OPSI, cek_tiap_b(b)), format_func=teks_cek,
                                       help="Muncul di Beranda saat sudah waktunya dicek.")
+                a7, a8 = st.columns(2)
+                ganti_in = a7.selectbox("Pengingat ganti", GANTI_OPSI, index=idx(GANTI_OPSI, ganti_tiap_b(b)),
+                                        format_func=teks_ganti,
+                                        help="Untuk barang yang lazim diganti berkala, seperti sikat gigi atau filter air. "
+                                             "Dihitung dari tanggal terakhir diganti, atau tanggal beli kalau belum pernah diganti.")
+                dg = a8.date_input("Terakhir diganti (boleh kosong)", value=iso_ke_date(b.get("diganti")),
+                                   min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY")
             foto_lama = b.get("foto", "")
             if foto_lama:
                 dat = ambil_foto(foto_lama)
@@ -554,7 +567,9 @@ def halaman_barang():
                                "garansi": gr.isoformat() if gr else "", "habis": bool(habis),
                                "minimum": int(minimum), "dalam": induk, "pemilik": pemilik, "favorit": bool(fav),
                                "tag": list(dict.fromkeys(t.strip()[:30] for t in tag_pil if t.strip()))[:8],
-                               "barcode": barcode_in.strip(), "cek_tiap": int(cek_in)}
+                               "barcode": barcode_in.strip(), "cek_tiap": int(cek_in),
+                               "toko": toko.strip(), "nota": nota.strip(),
+                               "ganti_tiap": int(ganti_in), "diganti": dg.isoformat() if dg else ""}
                         isi.update({k: v.strip() for k, v in nilai_atr.items()})
                         for kunci, v in isi.items():
                             if v or kunci in ("nama", "lokasi"):

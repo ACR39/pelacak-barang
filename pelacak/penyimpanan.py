@@ -12,7 +12,7 @@ import streamlit as st
 
 from pelacak.inti import (
     FILE_LOKAL, FOTO_LOKAL, Image, ImageOps, MAKS_AKTIVITAS, WIB, cfg_github, data_kosong,
-    fmt_iso, konversi_lama, pengguna_nama, sekarang, teks_cek,
+    fmt_iso, konversi_lama, pengguna_nama, sekarang, teks_cek, teks_ganti,
 )
 
 
@@ -131,7 +131,8 @@ LABEL_FIELD = {"nama": "Nama", "jumlah": "Jumlah", "kategori": "Kategori", "loka
                "garansi": "Garansi", "habis": "Perlu beli", "minimum": "Stok minimum", "dalam": "Di dalam",
                "foto": "Foto", "dipakai": "Dipakai", "merek": "Merek", "ukuran": "Ukuran", "warna": "Warna",
                "seri": "Nomor seri", "pemilik": "Pemilik", "galeri": "Foto tambahan", "petak": "Petak", "barcode": "Barcode",
-               "cek_tiap": "Cek berkala", "cek_terakhir": "Terakhir dicek",
+               "cek_tiap": "Cek berkala", "cek_terakhir": "Terakhir dicek", "toko": "Beli di", "nota": "Nomor nota",
+               "ganti_tiap": "Pengingat ganti", "diganti": "Terakhir diganti",
                "dibawa": "Sedang dibawa sejak", "dibawa_ke": "Dibawa ke", "hilang": "Hilang sejak",
                "hilang_di": "Terakhir terlihat di", "tautan": "Tautan", "opname": "Terakhir diinventarisasi", "favorit": "Favorit", "tag": "Label"}
 
@@ -165,7 +166,9 @@ def _tampil_nilai(d: dict, kunci: str, v, nama_barang: dict | None = None) -> st
         return ", ".join(v) if v else "kosong"
     if kunci == "cek_tiap":
         return teks_cek(v)
-    if kunci in ("kedaluwarsa", "garansi", "dipakai", "dibeli", "dibawa", "hilang", "cek_terakhir"):
+    if kunci == "ganti_tiap":
+        return teks_ganti(v)
+    if kunci in ("kedaluwarsa", "garansi", "dipakai", "dibeli", "dibawa", "hilang", "cek_terakhir", "diganti"):
         return fmt_iso(str(v))
     t = str(v).replace("\n", " ")
     return t if len(t) <= 40 else t[:39] + "…"

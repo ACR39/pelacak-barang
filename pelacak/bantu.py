@@ -4,13 +4,13 @@ import html
 import io
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 
 import streamlit as st
 
 from pelacak.inti import (
-    D, MAKS_RIWAYAT, TANPA, TANPA_KAT, WIB, fmt_iso, hari_ini, pengguna_nama, sekarang,
+    D, MAKS_RIWAYAT, TANPA, TANPA_KAT, WIB, fmt_iso, hari_ini, iso_ke_date, pengguna_nama, sekarang,
     sisa_hari,
 )
 from pelacak.penyimpanan import ambil_foto, commit
@@ -158,6 +158,42 @@ def diskon_persen(b: dict) -> int:
     return int(round((asli - beli) * 100 / asli))
 
 
+def umur_teks(b: dict) -> str:
+    """Umur barang dari tanggal beli, misalnya '2 th 3 bln' atau '12 hari'. Kosong kalau tanggal beli tidak ada."""
+    d = iso_ke_date(b.get("dibeli"))
+    t = hari_ini()
+    if not d or d > t:
+        return ""
+    hari = (t - d).days
+    total = (t.year - d.year) * 12 + (t.month - d.month) - (1 if t.day < d.day else 0)
+    th, bl = divmod(max(total, 0), 12)
+    bagian = ([f"{th} th"] if th else []) + ([f"{bl} bln"] if bl else [])
+    return " ".join(bagian) if bagian else f"{hari} hari"
+
+
+def ganti_tiap_b(b: dict) -> int:
+    try:
+        return max(int(b.get("ganti_tiap", 0) or 0), 0)
+    except Exception:
+        return 0
+
+
+def sisa_ganti(b: dict):
+    """Hari menuju waktu ganti (negatif = sudah lewat), None kalau tidak ada pengingat ganti.
+    Dihitung dari tanggal terakhir diganti; kalau belum pernah, dari tanggal beli, lalu dari tanggal data diubah."""
+    n = ganti_tiap_b(b)
+    if not n:
+        return None
+    ref = (iso_ke_date(b.get("diganti")) or iso_ke_date(b.get("dibeli")) or iso_ke_date(b.get("diubah"))
+           or hari_ini())
+    return (ref + timedelta(days=n) - hari_ini()).days
+
+
+def jadwal_ganti() -> list:
+    return sorted([(sisa_ganti(b), b) for b in D["barang"] if ganti_tiap_b(b)],
+                  key=lambda x: (x[0], x[1]["nama"].lower()))
+
+
 def minimum_b(b: dict) -> int:
     try:
         return max(int(b.get("minimum", 0) or 0), 0)
@@ -298,7 +334,7 @@ def teks_cari(b: dict) -> str:
     """Teks yang dicocokkan saat mencari barang, termasuk nama barang induk dan isinya."""
     induk = induk_dari(b)
     return " ".join([b["nama"], b.get("catatan", ""), b.get("tautan", ""), nama_tempat(b), nama_kat(b), b.get("pemilik", ""), b.get("barcode", ""),
-                     induk["nama"] if induk else ""] + [b.get(k, "") for k, _ in ATRIBUT]
+                     b.get("toko", ""), b.get("nota", ""), induk["nama"] if induk else ""] + [b.get(k, "") for k, _ in ATRIBUT]
                     + list(b.get("tag", [])) + [x["nama"] for x in isi_dari(b["id"])]).lower()
 
 
@@ -532,7 +568,7 @@ def html_nama_foto(x: dict) -> str:
 SEKSI_KARTU = [("lokasi", "Lokasi"), ("kategori", "Kategori"), ("harga", "Harga setelah diskon (harga yang dibayar)"),
                ("harga_asli", "Harga asli (sebelum diskon) dan persen diskon"),
                ("jumlah", "Jumlah (angka besar di kanan)"), ("tanggal", "Tanggal (dibeli, kedaluwarsa, garansi, dipakai, diinventarisasi)"),
-               ("pemilik", "Pemilik"), ("atribut", "Merek, ukuran, warna, nomor seri"),
+               ("toko", "Beli di dan nomor nota"), ("pemilik", "Pemilik"), ("atribut", "Merek, ukuran, warna, nomor seri"),
                ("hubungan", "Di dalam atau berisi barang lain"), ("catatan", "Catatan"), ("tautan", "Tautan"), ("label", "Label")]
 
 
@@ -603,7 +639,15 @@ def kartu_barang_html(b: dict, foto: bool = True) -> str:
         meta.append(teks_h)
     ekstra = []
     if b.get("dibeli") and "tanggal" not in sb:
-        ekstra.append(f"Dibeli: {fmt_iso(b['dibeli'])}")
+        ekstra.append(f"Dibeli: {fmt_iso(b['dibeli'])}" + (f" (umur {umur_teks(b)})" if umur_teks(b) else ""))
+    if (b.get("toko") or b.get("nota")) and "toko" not in sb:
+        ekstra.append(" · ".join(x for x in (f"Beli di: {html.escape(b['toko'])}" if b.get("toko") else "",
+                                              f"Nota: {html.escape(b['nota'])}" if b.get("nota") else "") if x))
+    if b.get("diganti") and "tanggal" not in sb:
+        ekstra.append(f"Diganti: {fmt_iso(b['diganti'])}")
+    sg = sisa_ganti(b)
+    if sg is not None and "tanggal" not in sb:
+        ekstra.append(f"Waktu ganti: {status_sisa(sg)}")
     for lab, kunci in (("Kedaluwarsa", "kedaluwarsa"), ("Garansi", "garansi")):
         s = sisa_hari(b.get(kunci))
         if s is not None and "tanggal" not in sb:
@@ -671,6 +715,7 @@ def kumpul_perhatian():
         if not p.get("kembali") and s is not None and s < 0:
             telat.append(f"{p.get('nama', '')} ({p.get('orang', '')})")
     beli = [b["nama"] for b in D["barang"] if perlu_beli(b)]
+    ganti = [b["nama"] for s, b in jadwal_ganti() if s <= 30]
     hasil = []
     if exp_lewat:
         hasil.append(f"⛔ <b>Sudah kedaluwarsa:</b> {daftar(exp_lewat)}")
@@ -680,6 +725,8 @@ def kumpul_perhatian():
         hasil.append(f"🛡️ <b>Garansi berakhir dalam 30 hari:</b> {daftar(gar_dekat)}")
     if telat:
         hasil.append(f"🔁 <b>Pinjaman lewat tenggat:</b> {daftar(telat)}")
+    if ganti:
+        hasil.append(f"🔧 <b>Waktunya diganti (30 hari ke depan):</b> {daftar(ganti)}")
     if beli:
         hasil.append(f"🛒 <b>Perlu dibeli:</b> {daftar(beli)}")
     return hasil
