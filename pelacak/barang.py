@@ -414,57 +414,6 @@ def halaman_barang():
                 ops_k = [""] + list(pk)
                 kat = st.selectbox("Kategori (boleh kosong)", ops_k, index=idx(ops_k, b.get("kategori", "")),
                                    format_func=lambda i: TANPA_KAT if not i else pk[i])
-            h1, h2 = st.columns(2)
-            harga_asli = h1.number_input("Harga asli per buah (Rp)", min_value=0, value=harga_asli_b(b), step=1000,
-                                         help="Harga sebelum diskon. Isi 0 kalau tidak ada diskon atau belum tahu.")
-            harga = h2.number_input("Harga setelah diskon per buah (Rp)", min_value=0, value=harga_b(b), step=1000,
-                                    help="Harga yang benar-benar dibayar. Kalau tidak ada diskon, isi sama dengan harga asli. "
-                                         "Dipakai di Statistik (tab Nilai barang).")
-            tb = st.date_input("Tanggal pembelian (boleh kosong)", value=iso_ke_date(b.get("dibeli")),
-                               min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY",
-                               help="Berguna untuk menghitung masa garansi dan umur barang.")
-            t1_, t2_ = st.columns(2)
-            toko = t1_.text_input("Beli di (toko, boleh kosong)", value=b.get("toko", ""), max_chars=80,
-                                  placeholder="Contoh: Tokopedia, Toko Maju Jaya")
-            nota = t2_.text_input("Nomor nota (boleh kosong)", value=b.get("nota", ""), max_chars=60,
-                                  help="Berguna untuk klaim garansi atau retur.")
-            if harga_asli and harga and harga < harga_asli:
-                pct = int(round((harga_asli - harga) * 100 / harga_asli))
-                st.caption(f"Diskon {pct}% · hemat Rp {harga_asli - harga:,} per buah".replace(",", "."))
-            h3, h4 = st.columns(2)
-            kd = h3.date_input("Kedaluwarsa (boleh kosong)", value=iso_ke_date(b.get("kedaluwarsa")),
-                               min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY")
-            gr = h4.date_input("Garansi sampai (boleh kosong)", value=iso_ke_date(b.get("garansi")),
-                               min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY")
-            habis = st.checkbox("Habis / perlu beli lagi", value=bool(b.get("habis")))
-            fav = st.checkbox("Favorit", value=bool(b.get("favorit")), help="Barang favorit tampil di Beranda dan di urutan atas pencarian.")
-            tag_pil = st.multiselect("Label (boleh kosong)", sorted(set(daftar_tag()) | set(b.get("tag", [])), key=str.lower),
-                                     default=b.get("tag", []), accept_new_options=True,
-                                     help="Ketik untuk membuat label baru, misalnya musim hujan atau naik gunung.")
-            minimum = st.number_input("Stok minimum", min_value=0, value=minimum_b(b), step=1,
-                                      help="Kalau jumlah sudah sampai angka ini atau kurang, barang otomatis "
-                                           "masuk daftar Perlu beli. Isi 0 kalau tidak dipantau.")
-            with st.expander("Detail tambahan (merek, ukuran, warna, nomor seri, barcode, cek berkala, ganti berkala)",
-                             expanded=any(b.get(k) for k, _ in ATRIBUT)
-                             or bool(b.get("barcode") or b.get("cek_tiap") or b.get("ganti_tiap"))):
-                a1, a2 = st.columns(2)
-                a3, a4 = st.columns(2)
-                nilai_atr = {}
-                for kol, (kunci, label) in zip((a1, a2, a3, a4), ATRIBUT):
-                    nilai_atr[kunci] = kol.text_input(label, value=b.get(kunci, ""), max_chars=60,
-                                                      help="Nomor seri berguna untuk klaim garansi." if kunci == "seri" else None)
-                a5, a6 = st.columns(2)
-                barcode_in = a5.text_input("Barcode", value=b.get("barcode", ""), max_chars=40,
-                                           help="Atau pasang lewat menu Scan barcode.")
-                cek_in = a6.selectbox("Cek berkala", CEK_OPSI, index=idx(CEK_OPSI, cek_tiap_b(b)), format_func=teks_cek,
-                                      help="Muncul di Beranda saat sudah waktunya dicek.")
-                a7, a8 = st.columns(2)
-                ganti_in = a7.selectbox("Pengingat ganti", GANTI_OPSI, index=idx(GANTI_OPSI, ganti_tiap_b(b)),
-                                        format_func=teks_ganti,
-                                        help="Untuk barang yang lazim diganti berkala, seperti sikat gigi atau filter air. "
-                                             "Dihitung dari tanggal terakhir diganti, atau tanggal beli kalau belum pernah diganti.")
-                dg = a8.date_input("Terakhir diganti (boleh kosong)", value=iso_ke_date(b.get("diganti")),
-                                   min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY")
             foto_lama = b.get("foto", "")
             if foto_lama:
                 dat = ambil_foto(foto_lama)
@@ -473,34 +422,97 @@ def halaman_barang():
             upl = st.file_uploader("Foto barang (boleh kosong)", type=["jpg", "jpeg", "png", "webp"],
                                    help="Foto dikecilkan otomatis supaya hemat tempat.")
             hapus_cb = st.checkbox("Hapus foto yang sekarang") if foto_lama else False
-            galeri_lama, hapus_g = list(b.get("galeri", [])), []
-            lamp_lama, hapus_l = list(b.get("lampiran", [])), []
-            if galeri_lama:
-                st.caption("Foto tambahan yang ada. Centang untuk menghapus.")
-                kg = st.columns(3)
-                for i, p in enumerate(galeri_lama):
-                    with kg[i % 3]:
-                        dat = ambil_foto(p)
-                        if dat:
-                            st.image(dat, use_container_width=True)
-                        if st.checkbox("Hapus", key=f"hg_{mode}_{i}_{versi()}"):
-                            hapus_g.append(p)
-            upl_g = st.file_uploader("Foto tambahan (boleh banyak)", type=["jpg", "jpeg", "png", "webp"],
-                                     accept_multiple_files=True, key=f"upl_g_{mode}_{versi()}",
-                                     help=f"Misalnya foto nota atau nomor seri. Maksimal {MAKS_GALERI} foto tambahan per barang.")
-            for j, x in enumerate(lamp_lama):
-                if st.checkbox(f"Hapus lampiran: {x.get('nama', 'dokumen')}", key=f"hl_{mode}_{j}_{versi()}"):
-                    hapus_l.append(x["path"])
-            upl_l = st.file_uploader("Lampiran dokumen PDF (boleh banyak)", type=["pdf"], accept_multiple_files=True,
-                                     key=f"upl_l_{mode}_{versi()}",
-                                     help=f"Nota, buku manual, atau kartu garansi. Maksimal {MAKS_LAMPIRAN} berkas, "
-                                          f"masing-masing {MAKS_LAMPIRAN_MB} MB setelah dikompres. PDF sampai {MAKS_UNGGAH_MB} MB "
-                                          "diterima dan otomatis dikompres supaya muat.")
             catatan = st.text_area("Catatan", value=b.get("catatan", ""),
                                    help="Alamat web yang kamu tulis di sini otomatis bisa diklik.")
-            tautan = st.text_area("Tautan (satu per baris, boleh kosong)", value=b.get("tautan", ""), height=90,
-                                  placeholder="https://toko.example/nota-123",
-                                  help="Misalnya nota online, buku manual, atau halaman toko.")
+            st.caption("Bagian di bawah ini terlipat. Bagian yang sudah ada isinya otomatis terbuka.")
+
+            with st.expander("Pembelian (harga, diskon, tanggal beli, toko, nota)",
+                             expanded=bool(harga_b(b) or harga_asli_b(b) or b.get("dibeli") or b.get("toko") or b.get("nota"))):
+                h1, h2 = st.columns(2)
+                harga_asli = h1.number_input("Harga asli per buah (Rp)", min_value=0, value=harga_asli_b(b), step=1000,
+                                             help="Harga sebelum diskon. Isi 0 kalau tidak ada diskon atau belum tahu.")
+                harga = h2.number_input("Harga setelah diskon per buah (Rp)", min_value=0, value=harga_b(b), step=1000,
+                                        help="Harga yang benar-benar dibayar. Kalau tidak ada diskon, isi sama dengan harga asli. "
+                                             "Dipakai di Statistik (tab Nilai barang).")
+                if harga_asli and harga and harga < harga_asli:
+                    pct = int(round((harga_asli - harga) * 100 / harga_asli))
+                    st.caption(f"Diskon {pct}% · hemat Rp {harga_asli - harga:,} per buah".replace(",", "."))
+                tb = st.date_input("Tanggal pembelian (boleh kosong)", value=iso_ke_date(b.get("dibeli")),
+                                   min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY",
+                                   help="Berguna untuk menghitung masa garansi dan umur barang.")
+                t1_, t2_ = st.columns(2)
+                toko = t1_.text_input("Beli di (toko, boleh kosong)", value=b.get("toko", ""), max_chars=80,
+                                      placeholder="Contoh: Tokopedia, Toko Maju Jaya")
+                nota = t2_.text_input("Nomor nota (boleh kosong)", value=b.get("nota", ""), max_chars=60,
+                                      help="Berguna untuk klaim garansi atau retur.")
+
+            with st.expander("Tanggal dan pengingat (kedaluwarsa, garansi, cek berkala, ganti berkala)",
+                             expanded=bool(b.get("kedaluwarsa") or b.get("garansi") or b.get("cek_tiap")
+                                           or b.get("ganti_tiap") or b.get("diganti"))):
+                h3, h4 = st.columns(2)
+                kd = h3.date_input("Kedaluwarsa (boleh kosong)", value=iso_ke_date(b.get("kedaluwarsa")),
+                                   min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY")
+                gr = h4.date_input("Garansi sampai (boleh kosong)", value=iso_ke_date(b.get("garansi")),
+                                   min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY")
+                a5, a6 = st.columns(2)
+                cek_in = a5.selectbox("Cek berkala", CEK_OPSI, index=idx(CEK_OPSI, cek_tiap_b(b)), format_func=teks_cek,
+                                      help="Muncul di Beranda saat sudah waktunya dicek.")
+                ganti_in = a6.selectbox("Pengingat ganti", GANTI_OPSI, index=idx(GANTI_OPSI, ganti_tiap_b(b)),
+                                        format_func=teks_ganti,
+                                        help="Untuk barang yang lazim diganti berkala, seperti sikat gigi atau filter air. "
+                                             "Dihitung dari tanggal terakhir diganti, atau tanggal beli kalau belum pernah diganti.")
+                dg = st.date_input("Terakhir diganti (boleh kosong)", value=iso_ke_date(b.get("diganti")),
+                                   min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY")
+
+            galeri_lama, hapus_g = list(b.get("galeri", [])), []
+            lamp_lama, hapus_l = list(b.get("lampiran", [])), []
+            with st.expander("Foto tambahan, dokumen PDF, dan tautan",
+                             expanded=bool(galeri_lama or lamp_lama or b.get("tautan"))):
+                if galeri_lama:
+                    st.caption("Foto tambahan yang ada. Centang untuk menghapus.")
+                    kg = st.columns(3)
+                    for i, p in enumerate(galeri_lama):
+                        with kg[i % 3]:
+                            dat = ambil_foto(p)
+                            if dat:
+                                st.image(dat, use_container_width=True)
+                            if st.checkbox("Hapus", key=f"hg_{mode}_{i}_{versi()}"):
+                                hapus_g.append(p)
+                upl_g = st.file_uploader("Foto tambahan (boleh banyak)", type=["jpg", "jpeg", "png", "webp"],
+                                         accept_multiple_files=True, key=f"upl_g_{mode}_{versi()}",
+                                         help=f"Misalnya foto nota atau nomor seri. Maksimal {MAKS_GALERI} foto tambahan per barang.")
+                for j, x in enumerate(lamp_lama):
+                    if st.checkbox(f"Hapus lampiran: {x.get('nama', 'dokumen')}", key=f"hl_{mode}_{j}_{versi()}"):
+                        hapus_l.append(x["path"])
+                upl_l = st.file_uploader("Lampiran dokumen PDF (boleh banyak)", type=["pdf"], accept_multiple_files=True,
+                                         key=f"upl_l_{mode}_{versi()}",
+                                         help=f"Nota, buku manual, atau kartu garansi. Maksimal {MAKS_LAMPIRAN} berkas, "
+                                              f"masing-masing {MAKS_LAMPIRAN_MB} MB setelah dikompres. PDF sampai {MAKS_UNGGAH_MB} MB "
+                                              "diterima dan otomatis dikompres supaya muat.")
+                tautan = st.text_area("Tautan (satu per baris, boleh kosong)", value=b.get("tautan", ""), height=90,
+                                      placeholder="https://toko.example/nota-123",
+                                      help="Misalnya nota online, buku manual, atau halaman toko.")
+
+            with st.expander("Lainnya (label, stok minimum, merek, ukuran, nomor seri, barcode, favorit, habis)",
+                             expanded=bool(b.get("tag") or minimum_b(b) or any(b.get(k) for k, _ in ATRIBUT)
+                                           or b.get("barcode") or b.get("favorit") or b.get("habis"))):
+                habis = st.checkbox("Habis / perlu beli lagi", value=bool(b.get("habis")))
+                fav = st.checkbox("Favorit", value=bool(b.get("favorit")),
+                                  help="Barang favorit tampil di Beranda dan di urutan atas pencarian.")
+                tag_pil = st.multiselect("Label (boleh kosong)", sorted(set(daftar_tag()) | set(b.get("tag", [])), key=str.lower),
+                                         default=b.get("tag", []), accept_new_options=True,
+                                         help="Ketik untuk membuat label baru, misalnya musim hujan atau naik gunung.")
+                minimum = st.number_input("Stok minimum", min_value=0, value=minimum_b(b), step=1,
+                                          help="Kalau jumlah sudah sampai angka ini atau kurang, barang otomatis "
+                                               "masuk daftar Perlu beli. Isi 0 kalau tidak dipantau.")
+                a1, a2 = st.columns(2)
+                a3, a4 = st.columns(2)
+                nilai_atr = {}
+                for kol, (kunci, label) in zip((a1, a2, a3, a4), ATRIBUT):
+                    nilai_atr[kunci] = kol.text_input(label, value=b.get(kunci, ""), max_chars=60,
+                                                      help="Nomor seri berguna untuk klaim garansi." if kunci == "seri" else None)
+                barcode_in = st.text_input("Barcode", value=b.get("barcode", ""), max_chars=40,
+                                           help="Atau pasang lewat menu Scan barcode.")
             t1, t2, _ = st.columns([1, 1, 4])
             simpan_ = t1.form_submit_button("Simpan", type="primary")
             kembali = t2.form_submit_button("Kembali")
