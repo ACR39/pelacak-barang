@@ -15,12 +15,13 @@ from pelacak.inti import D, TGL_MAX, TGL_MIN, adalah_admin, hari_ini
 KOLOM_IMPOR = [("nama", "Nama barang"), ("jumlah", "Jumlah"), ("tempat", "Tempat"), ("lokasi", "Lokasi"),
                ("sub", "Sub lokasi"), ("kategori", "Kategori"), ("pemilik", "Pemilik"), ("merek", "Merek"),
                ("ukuran", "Ukuran"), ("warna", "Warna"), ("seri", "Nomor seri"), ("barcode", "Barcode"),
-               ("harga", "Harga beli"), ("dibeli", "Tanggal beli"), ("kedaluwarsa", "Kedaluwarsa"),
+               ("harga_asli", "Harga asli"), ("harga", "Harga setelah diskon"), ("dibeli", "Tanggal beli"), ("kedaluwarsa", "Kedaluwarsa"),
                ("garansi", "Garansi sampai"), ("label", "Label"), ("catatan", "Catatan"), ("tautan", "Tautan"),
                ("favorit", "Favorit")]
 
 
-ALIAS_IMPOR = {"nama": ["nama", "barang"], "sub": ["sublokasi", "sub"], "harga": ["harga"], "dibeli": ["dibeli"],
+ALIAS_IMPOR = {"nama": ["nama", "barang"], "sub": ["sublokasi", "sub"], "harga": ["harga", "harga beli", "harga diskon"],
+               "harga_asli": ["harga sebelum diskon", "harga normal"], "dibeli": ["dibeli"],
                "garansi": ["garansi"], "seri": ["seri", "no seri"], "label": ["tag", "labels"],
                "kedaluwarsa": ["expired", "exp"]}
 
@@ -162,6 +163,14 @@ def urai_impor(df: pd.DataFrame, buat: bool):
             if harga is None:
                 galat.append(f"harga '{r['harga']}' bukan angka")
                 harga = 0
+        harga_asli = 0
+        if r["harga_asli"]:
+            harga_asli = _angka_impor(r["harga_asli"])
+            if harga_asli is None:
+                galat.append(f"harga asli '{r['harga_asli']}' bukan angka")
+                harga_asli = 0
+        if harga_asli and harga and harga > harga_asli:
+            galat.append("harga setelah diskon lebih besar dari harga asli")
         tgl = {}
         for k in ("dibeli", "kedaluwarsa", "garansi"):
             tgl[k], g = _tgl_impor(r[k])
@@ -175,7 +184,7 @@ def urai_impor(df: pd.DataFrame, buat: bool):
                 galat.append("tautan harus diawali http:// atau https://")
         label = list(dict.fromkeys(t.strip()[:30] for t in re.split(r"[,;]", r["label"]) if t.strip()))[:8]
         info = {"no": no, "nama": r["nama"], "lokasi_txt": " › ".join(x for x in (r["tempat"], r["lokasi"], r["sub"]) if x),
-                "r": r, "jumlah": jml, "harga": harga or 0, "tgl": tgl, "tautan": "\n".join(urls), "label": label,
+                "r": r, "jumlah": jml, "harga": harga or 0, "harga_asli": harga_asli or 0, "tgl": tgl, "tautan": "\n".join(urls), "label": label,
                 "favorit": r["favorit"].lower() in ("ya", "y", "1", "true", "x", "★", "iya"),
                 "galat": galat, "dup": False}
         if not galat:
@@ -211,6 +220,8 @@ def terapkan_impor(baris: list, buat: bool, lewati: bool):
                 b[k] = r[k]
         if info["harga"]:
             b["harga"] = info["harga"]
+        if info["harga_asli"]:
+            b["harga_asli"] = info["harga_asli"]
         for k, v in info["tgl"].items():
             if v:
                 b[k] = v
@@ -243,7 +254,7 @@ def buat_templat_impor() -> bytes:
     pt = wb.create_sheet("Petunjuk")
     for baris in ("Isi satu barang per baris di lembar Barang. Kolom hijau (Nama barang, Lokasi) wajib diisi.",
                   "Tempat, Lokasi, Sub lokasi, dan Kategori ditulis dengan nama. Kalau belum ada, admin bisa membuatnya otomatis saat impor.",
-                  "Jumlah kosong dianggap 1. Harga beli boleh ditulis 1500000 atau 1.500.000.",
+                  "Jumlah kosong dianggap 1. Harga asli dan Harga setelah diskon boleh ditulis 1500000 atau 1.500.000 (judul lama 'Harga beli' tetap terbaca).",
                   "Tanggal ditulis 31/01/2026 atau 2026-01-31.",
                   "Label boleh lebih dari satu, pisahkan dengan koma. Favorit diisi Ya kalau ingin ditandai.",
                   "Tautan harus diawali http:// atau https://.",

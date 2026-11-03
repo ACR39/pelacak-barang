@@ -127,7 +127,7 @@ def muat_ke_sesi():
 
 
 LABEL_FIELD = {"nama": "Nama", "jumlah": "Jumlah", "kategori": "Kategori", "lokasi": "Lokasi",
-               "sublokasi": "Sub lokasi", "catatan": "Catatan", "harga": "Harga beli", "dibeli": "Tanggal beli", "kedaluwarsa": "Kedaluwarsa",
+               "sublokasi": "Sub lokasi", "catatan": "Catatan", "harga": "Harga setelah diskon", "harga_asli": "Harga asli", "dibeli": "Tanggal beli", "kedaluwarsa": "Kedaluwarsa",
                "garansi": "Garansi", "habis": "Perlu beli", "minimum": "Stok minimum", "dalam": "Di dalam",
                "foto": "Foto", "dipakai": "Dipakai", "merek": "Merek", "ukuran": "Ukuran", "warna": "Warna",
                "seri": "Nomor seri", "pemilik": "Pemilik", "galeri": "Foto tambahan", "petak": "Petak", "barcode": "Barcode",
@@ -157,7 +157,7 @@ def _tampil_nilai(d: dict, kunci: str, v, nama_barang: dict | None = None) -> st
         return next((x["nama"] for x in peta[kunci] if x["id"] == v), "(sudah dihapus)")
     if kunci == "foto":
         return "ada"
-    if kunci == "harga":
+    if kunci in ("harga", "harga_asli"):
         return "Rp " + f"{int(v):,}".replace(",", ".")
     if kunci == "galeri":
         return f"{len(v)} foto" if v else "kosong"

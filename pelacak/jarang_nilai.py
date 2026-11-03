@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from pelacak.bantu import (
-    harga_b, jumlah_b, lencana, nama_kat, nama_lokasi, nama_tempat, selesai_simpan, status_sisa,
+    harga_asli_b, harga_b, jumlah_b, lencana, nama_kat, nama_lokasi, nama_tempat, selesai_simpan, status_sisa,
 )
 from pelacak.inti import D, fmt_iso, hari_ini, iso_ke_date, rp, sisa_hari
 
@@ -86,7 +86,7 @@ def halaman_tanggal():
 def halaman_nilai():
     ber = [b for b in D["barang"] if harga_b(b)]
     if not ber:
-        st.info("Belum ada harga yang diisi. Isi \"Harga beli per buah\" di Kelola barang.")
+        st.info("Belum ada harga yang diisi. Isi \"Harga setelah diskon per buah\" di Kelola barang.")
         return
 
     def nilai(b):
@@ -101,6 +101,10 @@ def halaman_nilai():
         f'<div class="sc-stat"><div class="sc-lab">Rata-rata per jenis</div><div class="sc-val">{rp(total / len(ber))}</div></div>'
         f'<div class="sc-stat"><div class="sc-lab">Belum diisi harga</div><div class="sc-val m">{kosong}</div></div>'
         '</div>', unsafe_allow_html=True)
+    hemat = sum((harga_asli_b(b) - harga_b(b)) * max(jumlah_b(b), 0)
+                for b in ber if harga_asli_b(b) > harga_b(b))
+    if hemat:
+        st.caption(f"Total hemat dari diskon: {rp(hemat)} (harga asli dikurangi harga setelah diskon, dikali jumlah).")
     g1, g2 = st.columns(2)
     with g1.container(key="kartu_g1"):
         st.markdown("**Nilai per lokasi (Rp)**")

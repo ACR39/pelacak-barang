@@ -142,6 +142,22 @@ def harga_b(b: dict) -> int:
         return 0
 
 
+def harga_asli_b(b: dict) -> int:
+    """Harga sebelum diskon per buah. 0 kalau tidak diisi."""
+    try:
+        return max(int(b.get("harga_asli", 0) or 0), 0)
+    except Exception:
+        return 0
+
+
+def diskon_persen(b: dict) -> int:
+    """Persen diskon dibulatkan. 0 kalau harga asli atau harga beli kosong, atau tidak ada potongan."""
+    asli, beli = harga_asli_b(b), harga_b(b)
+    if not asli or not beli or beli >= asli:
+        return 0
+    return int(round((asli - beli) * 100 / asli))
+
+
 def minimum_b(b: dict) -> int:
     try:
         return max(int(b.get("minimum", 0) or 0), 0)
@@ -513,7 +529,7 @@ def html_nama_foto(x: dict) -> str:
     return f'<div style="padding:.3rem 0">{nama}</div>'
 
 
-SEKSI_KARTU = [("lokasi", "Lokasi"), ("kategori", "Kategori"), ("harga", "Harga beli"),
+SEKSI_KARTU = [("lokasi", "Lokasi"), ("kategori", "Kategori"), ("harga", "Harga (asli, diskon, beli)"),
                ("jumlah", "Jumlah (angka besar di kanan)"), ("tanggal", "Tanggal (dibeli, kedaluwarsa, garansi, dipakai, diinventarisasi)"),
                ("pemilik", "Pemilik"), ("atribut", "Merek, ukuran, warna, nomor seri"),
                ("hubungan", "Di dalam atau berisi barang lain"), ("catatan", "Catatan"), ("tautan", "Tautan"), ("label", "Label")]
@@ -562,7 +578,12 @@ def kartu_barang_html(b: dict, foto: bool = True) -> str:
     if b.get("kategori") and "kategori" not in sb:
         meta.append(nama_kat(b))
     if harga_b(b) and "harga" not in sb:
-        meta.append("Rp " + f"{harga_b(b):,}".replace(",", "."))
+        teks_h = "Rp " + f"{harga_b(b):,}".replace(",", ".")
+        if diskon_persen(b):
+            teks_h += f" (asli Rp {harga_asli_b(b):,}, diskon {diskon_persen(b)}%)".replace(",", ".")
+        meta.append(teks_h)
+    elif harga_asli_b(b) and not harga_b(b) and "harga" not in sb:
+        meta.append("Harga asli Rp " + f"{harga_asli_b(b):,}".replace(",", "."))
     ekstra = []
     if b.get("dibeli") and "tanggal" not in sb:
         ekstra.append(f"Dibeli: {fmt_iso(b['dibeli'])}")

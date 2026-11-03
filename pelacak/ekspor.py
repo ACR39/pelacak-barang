@@ -4,7 +4,7 @@ import io
 import streamlit as st
 
 from pelacak.bantu import (
-    daftar_tautan, harga_b, jumlah_b, lokasi_dari, nama_kat, nama_lokasi, nama_tempat,
+    daftar_tautan, diskon_persen, harga_asli_b, harga_b, jumlah_b, lokasi_dari, nama_kat, nama_lokasi, nama_tempat,
     perlu_beli, sub_dari, versi,
 )
 from pelacak.inti import D, fmt_iso, hari_ini, rp
@@ -35,7 +35,9 @@ KOLOM_EKSPOR = {
     "seri": ("Nomor seri", lambda b: b.get("seri", ""), 2.6, False),
     "barcode": ("Barcode", lambda b: b.get("barcode", ""), 2.8, False),
     "dibeli": ("Tanggal beli", lambda b: fmt_iso(b.get("dibeli", "")), 2.2, False),
-    "harga": ("Harga beli", lambda b: harga_b(b) or "", 2.4, True),
+    "harga_asli": ("Harga asli", lambda b: harga_asli_b(b) or "", 2.4, True),
+    "harga": ("Harga setelah diskon", lambda b: harga_b(b) or "", 2.4, True),
+    "diskon": ("Diskon", lambda b: f"{diskon_persen(b)}%" if diskon_persen(b) else "", 1.6, True),
     "kedaluwarsa": ("Kedaluwarsa", lambda b: fmt_iso(b.get("kedaluwarsa", "")), 2.2, False),
     "garansi": ("Garansi sampai", lambda b: fmt_iso(b.get("garansi", "")), 2.2, False),
     "catatan": ("Catatan", lambda b: b.get("catatan", ""), 5, False),
@@ -101,14 +103,14 @@ def buat_xlsx(daftar: list, kolom: list, grup: str, cek: bool, judul: str) -> by
         c.border = garis
     ws.row_dimensions[1].height = 26
     for i, nm in enumerate(kepala, start=1):
-        angka = nm in ("Jumlah", "Harga beli")
+        angka = nm in ("Jumlah", "Harga asli", "Harga setelah diskon", "Diskon")
         lebar = max([len(str(nm))] + [len(str(ws.cell(r, i).value or "")) for r in range(2, ws.max_row + 1)])
         ws.column_dimensions[get_column_letter(i)].width = max(9, min(lebar + 3, 46 if nm != "Catatan" else 56))
         for r in range(2, ws.max_row + 1):
             c = ws.cell(r, i)
             c.border = garis
             c.alignment = Alignment(vertical="top", wrap_text=True, horizontal="right" if angka else "left")
-            if nm == "Harga beli" and c.value != "":
+            if nm in ("Harga asli", "Harga setelah diskon") and c.value != "":
                 c.number_format = '"Rp" #,##0'
             elif nm == "Dicek":
                 c.alignment = Alignment(horizontal="center", vertical="top")
@@ -134,7 +136,7 @@ def buat_xlsx(daftar: list, kolom: list, grup: str, cek: bool, judul: str) -> by
     rs["A5"], rs["B5"] = "Total buah", sum(jumlah_b(b) for b in daftar)
     nilai = sum(harga_b(b) * max(jumlah_b(b), 0) for b in daftar)
     if nilai:
-        rs["A6"], rs["B6"] = "Total nilai (harga beli)", nilai
+        rs["A6"], rs["B6"] = "Total nilai (setelah diskon)", nilai
         rs["B6"].number_format = '"Rp" #,##0'
     if grup != "tanpa":
         rs["A8"], rs["B8"], rs["C8"] = NAMA_GRUP[grup], "Jenis", "Buah"
@@ -195,7 +197,7 @@ def buat_pdf(daftar: list, kolom: list, grup: str, cek: bool, judul: str, sub: s
         sel = []
         for k in kolom:
             v = _nilai_kol(k, b, grup)
-            if k == "harga" and v != "":
+            if k in ("harga", "harga_asli") and v != "":
                 v = rp(v)
             sel.append(Paragraph(bersih(v), st_angka if KOLOM_EKSPOR[k][3] else st_sel))
         if cek:

@@ -7,7 +7,7 @@ import streamlit as st
 
 from pelacak.bantu import (
     ATRIBUT, MAKS_GALERI, MAKS_LAMPIRAN, MAKS_LAMPIRAN_MB, _norm_nama, atur, buang_barang,
-    catat, daftar_lokasi, daftar_pemilik, daftar_tag, harga_b, idx, induk_dari, isi_dari,
+    catat, daftar_lokasi, daftar_pemilik, daftar_tag, harga_asli_b, harga_b, idx, induk_dari, isi_dari,
     jumlah_b, kartu_barang_html, keturunan, lencana, lokasi_dari, minimum_b, nama_kat, nama_lok,
     nama_tempat, peringatan_serupa, pesan_hapus_barang, saring_barang, selesai_simpan,
     sinkron_isi, sub_dari, tampil_foto_kecil, tampil_galeri, tampil_lampiran, tempat_dari_lok,
@@ -414,11 +414,17 @@ def halaman_barang():
                 kat = st.selectbox("Kategori (boleh kosong)", ops_k, index=idx(ops_k, b.get("kategori", "")),
                                    format_func=lambda i: TANPA_KAT if not i else pk[i])
             h1, h2 = st.columns(2)
-            harga = h1.number_input("Harga beli per buah (Rp)", min_value=0, value=harga_b(b), step=1000,
-                                    help="Isi 0 kalau belum tahu. Dipakai di Statistik (tab Nilai barang).")
-            tb = h2.date_input("Tanggal pembelian (boleh kosong)", value=iso_ke_date(b.get("dibeli")),
+            harga_asli = h1.number_input("Harga asli per buah (Rp)", min_value=0, value=harga_asli_b(b), step=1000,
+                                         help="Harga sebelum diskon. Isi 0 kalau tidak ada diskon atau belum tahu.")
+            harga = h2.number_input("Harga setelah diskon per buah (Rp)", min_value=0, value=harga_b(b), step=1000,
+                                    help="Harga yang benar-benar dibayar. Kalau tidak ada diskon, isi sama dengan harga asli. "
+                                         "Dipakai di Statistik (tab Nilai barang).")
+            tb = st.date_input("Tanggal pembelian (boleh kosong)", value=iso_ke_date(b.get("dibeli")),
                                min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY",
                                help="Berguna untuk menghitung masa garansi dan umur barang.")
+            if harga_asli and harga and harga < harga_asli:
+                pct = int(round((harga_asli - harga) * 100 / harga_asli))
+                st.caption(f"Diskon {pct}% · hemat Rp {harga_asli - harga:,} per buah".replace(",", "."))
             h3, h4 = st.columns(2)
             kd = h3.date_input("Kedaluwarsa (boleh kosong)", value=iso_ke_date(b.get("kedaluwarsa")),
                                min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY")
@@ -491,6 +497,8 @@ def halaman_barang():
                     st.error("Nama barang wajib diisi.")
                 elif sub and next(x for x in D["sublokasi"] if x["id"] == sub)["lokasi"] != lok:
                     st.error("Sub lokasi yang dipilih bukan bagian dari lokasi di atas.")
+                elif harga_asli and harga and harga > harga_asli:
+                    st.error("Harga setelah diskon tidak boleh lebih besar dari harga asli.")
                 elif tautan.strip() and any(not re.match(r"https?://", s.strip(), re.IGNORECASE)
                                             for s in tautan.splitlines() if s.strip()):
                     st.error("Setiap baris tautan harus diawali http:// atau https://")
@@ -539,7 +547,7 @@ def halaman_barang():
                     else:
                         baru = dict(b) if mode != "baru" else {"id": id_}
                         isi = {"nama": nama, "lokasi": lok, "sublokasi": sub, "petak": petak, "kategori": kat,
-                               "catatan": catatan.strip(), "harga": int(harga),
+                               "catatan": catatan.strip(), "harga": int(harga), "harga_asli": int(harga_asli),
                                "tautan": "\n".join(s.strip() for s in tautan.splitlines() if s.strip()),
                                "dibeli": tb.isoformat() if tb else "",
                                "kedaluwarsa": kd.isoformat() if kd else "",
