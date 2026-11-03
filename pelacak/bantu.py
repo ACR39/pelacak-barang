@@ -24,7 +24,7 @@ def atur(kunci: str, nilai):
 def pindah_halaman(h: str):
     """Ganti menu sekaligus tutup form/konfirmasi yang masih terbuka."""
     st.session_state.halaman = h
-    for k in ("br_mode", "br_hapus", "sp_hapus", "sp_kosong", "pj_hapus", "pj_mode", "rc_mode", "rc_hapus", "bl_mode", "bm_buang", "db_mode", "hl_mode", "hl_ketemu", "pk_hapus", "sc_n", "op_rencana", "serupa_ok",
+    for k in ("br_mode", "br_hapus", "sp_hapus", "sp_kosong", "pj_hapus", "pj_mode", "pj_kembali", "rp_hapus", "rc_mode", "rc_hapus", "bl_mode", "bm_buang", "db_mode", "hl_mode", "hl_ketemu", "pk_hapus", "sc_n", "op_rencana", "serupa_ok",
               "edit_tempat", "hapus_tempat", "edit_kategori", "hapus_kategori",
               "edit_lokasi", "hapus_lokasi", "edit_sub", "hapus_sub", "edit_pemilik", "hapus_pemilik"):
         st.session_state.pop(k, None)

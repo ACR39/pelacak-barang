@@ -6,6 +6,9 @@ import streamlit as st
 
 from pelacak.bantu import atur, nama_tempat, pinjam_aktif, selesai_simpan, status_sisa, versi
 from pelacak.inti import D, TGL_MAX, TGL_MIN, fmt_iso, hari_ini, sisa_hari
+from pelacak.penyimpanan import ambil_foto, hapus_foto, simpan_foto
+
+TIPE_FOTO = ["jpg", "jpeg", "png", "webp"]
 
 
 # ------------------------------------------------------------ pinjam-meminjam
@@ -15,8 +18,9 @@ def _baris_hapus_pinjam(p):
         st.warning(f"Hapus catatan {p.get('nama', '')}?")
         y, n, _ = st.columns([1, 1, 4])
         if y.button("Ya, hapus", type="primary", key=f"pjya_{p['id']}"):
+            fs = [f for f in (p.get("foto_pinjam"), p.get("foto_kembali")) if f]
             D["pinjam"] = [x for x in D["pinjam"] if x["id"] != p["id"]]
-            selesai_simpan("Dihapus.", pj_hapus=None)
+            selesai_simpan("Dihapus.", sesudah=(lambda fs=fs: [hapus_foto(f) for f in fs]) if fs else None, pj_hapus=None)
         n.button("Batal", key=f"pjbatal_{p['id']}", on_click=atur, args=("pj_hapus", None))
 
 
@@ -36,6 +40,40 @@ def kartu_pinjam_html(p: dict) -> str:
         kanan = '<div class="qt"><span>Tanpa tenggat</span></div>'
     return (f'<div class="itm pj"><div class="ic">{ic}</div><div class="isi"><div class="jd">'
             f'{html.escape(p.get("nama", ""))}{tanda}</div>{mt}{cat}</div>{kanan}</div>')
+
+
+def _foto_kondisi(p: dict):
+    """Foto kondisi saat dipinjamkan dan saat kembali, berdampingan supaya mudah dibandingkan."""
+    if not (p.get("foto_pinjam") or p.get("foto_kembali")):
+        return
+    with st.expander("Foto kondisi barang"):
+        c1, c2 = st.columns(2)
+        for kol, judul, kunci in ((c1, "Saat dipinjamkan" if p.get("arah") == "keluar" else "Saat dipinjam", "foto_pinjam"),
+                                  (c2, "Saat kembali", "foto_kembali")):
+            kol.caption(judul)
+            dat = ambil_foto(p[kunci]) if p.get(kunci) else None
+            if dat:
+                kol.image(dat, use_container_width=True)
+            else:
+                kol.caption("Tidak ada foto")
+
+
+def _panel_kembali(p: dict):
+    """Konfirmasi barang sudah kembali, dengan foto kondisi saat kembali (boleh kosong)."""
+    if st.session_state.get("pj_kembali") != p["id"]:
+        return
+    f = st.file_uploader("Foto kondisi saat kembali (boleh kosong)", type=TIPE_FOTO, key=f"pj_fk_{p['id']}_{versi()}")
+    y, n, _ = st.columns([1.6, 1, 1.4])
+    if y.button("Catat sudah kembali", type="primary", key=f"pjkya_{p['id']}"):
+        if f is not None:
+            try:
+                p["foto_kembali"] = simpan_foto(p["id"], f.getvalue())
+            except Exception as e:
+                st.error(f"Foto gagal diunggah: {e}")
+                return
+        p["kembali"] = hari_ini().isoformat()
+        selesai_simpan("Dicatat sudah kembali.", pj_kembali=None)
+    n.button("Batal", key=f"pjkbt_{p['id']}", on_click=atur, args=("pj_kembali", None))
 
 
 def halaman_pinjam():
@@ -61,6 +99,9 @@ def halaman_pinjam():
                 tenggat = c3.date_input("Tenggat kembali (boleh kosong)", value=None,
                                         min_value=TGL_MIN, max_value=TGL_MAX, format="DD/MM/YYYY")
                 catatan = st.text_input("Catatan (boleh kosong)")
+                foto_in = st.file_uploader("Foto kondisi barang (boleh kosong)", type=TIPE_FOTO,
+                                           key=f"pj_foto_{versi()}",
+                                           help="Berguna untuk membandingkan kondisi saat barang kembali.")
                 t1, t2, _ = st.columns([1, 1, 4])
                 kirim = t1.form_submit_button("Catat", type="primary")
                 kembali = t2.form_submit_button("Kembali")
@@ -79,12 +120,23 @@ def halaman_pinjam():
                 elif pilih and keluar_ and pinjam_aktif(pilih):
                     st.error(f"Barang itu masih tercatat dipinjam {pinjam_aktif(pilih).get('orang', '')}.")
                 else:
-                    D["pinjam"].append({"id": uuid.uuid4().hex[:8], "arah": "keluar" if keluar_ else "masuk",
-                                        "barang": pilih, "nama": nama, "orang": orang.strip(),
-                                        "tanggal": tgl.isoformat(),
-                                        "tenggat": tenggat.isoformat() if tenggat else "",
-                                        "catatan": catatan.strip(), "kembali": ""})
-                    selesai_simpan("Peminjaman dicatat.", pj_mode=None)
+                    rid = uuid.uuid4().hex[:8]
+                    rec = {"id": rid, "arah": "keluar" if keluar_ else "masuk",
+                           "barang": pilih, "nama": nama, "orang": orang.strip(),
+                           "tanggal": tgl.isoformat(),
+                           "tenggat": tenggat.isoformat() if tenggat else "",
+                           "catatan": catatan.strip(), "kembali": ""}
+                    galat = ""
+                    if foto_in is not None:
+                        try:
+                            rec["foto_pinjam"] = simpan_foto(rid, foto_in.getvalue())
+                        except Exception as e:
+                            galat = f"Foto gagal diunggah: {e}"
+                    if galat:
+                        st.error(galat)
+                    else:
+                        D["pinjam"].append(rec)
+                        selesai_simpan("Peminjaman dicatat.", pj_mode=None)
             return
 
         with st.container(key="baris_cari"):
@@ -110,11 +162,12 @@ def halaman_pinjam():
                 with st.container(key=f"item_p_{p['id']}"):
                     st.markdown(kartu_pinjam_html(p), unsafe_allow_html=True)
                     e1, e2, _ = st.columns([2, 1, 1])
-                    if e1.button("Sudah kembali", key=f"kpakai_pj_{p['id']}", use_container_width=True):
-                        p["kembali"] = hari.isoformat()
-                        selesai_simpan("Dicatat sudah kembali.")
+                    e1.button("Sudah kembali", key=f"kpakai_pj_{p['id']}", use_container_width=True,
+                              on_click=atur, args=("pj_kembali", p["id"]))
                     e2.button("Hapus", key=f"khapus_pj_{p['id']}", on_click=atur, args=("pj_hapus", p["id"]),
                               use_container_width=True)
+                    _panel_kembali(p)
+                    _foto_kondisi(p)
                     _baris_hapus_pinjam(p)
         else:
             lebar = [3.4, 2.2, 1.8, 2.2, 2.8]
@@ -133,11 +186,11 @@ def halaman_pinjam():
                 k[3].markdown(f'{fmt_iso(p["tenggat"])}<br>{status_sisa(sisa_hari(p["tenggat"]))}'
                               if p.get("tenggat") else "—", unsafe_allow_html=True)
                 a1, a2 = k[4].columns([3, 1])
-                if a1.button("Sudah kembali", key=f"pjkembali_{p['id']}"):
-                    p["kembali"] = hari.isoformat()
-                    selesai_simpan("Dicatat sudah kembali.")
+                a1.button("Sudah kembali", key=f"pjkembali_{p['id']}", on_click=atur, args=("pj_kembali", p["id"]))
                 a2.button("🗑️", key=f"pjhapus_{p['id']}", help="Hapus catatan", on_click=atur,
                           args=("pj_hapus", p["id"]))
+                _panel_kembali(p)
+                _foto_kondisi(p)
                 _baris_hapus_pinjam(p)
         with st.expander(f"Sudah kembali ({len(selesai)})"):
             if not selesai:
@@ -150,4 +203,5 @@ def halaman_pinjam():
                 k[3].write("Dipinjamkan" if p.get("arah") == "keluar" else "Saya pinjam")
                 k[4].button("🗑️", key=f"pjhapus2_{p['id']}", help="Hapus catatan", on_click=atur,
                             args=("pj_hapus", p["id"]))
+                _foto_kondisi(p)
                 _baris_hapus_pinjam(p)

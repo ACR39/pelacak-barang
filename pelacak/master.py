@@ -366,6 +366,8 @@ def halaman_lokasi():
                     c3.button("Batal", key=f"bh_lok_{x['id']}", on_click=atur, args=("hapus_lokasi", None))
                     if c2.button("Ya, hapus", key=f"yh_lok_{x['id']}", type="primary"):
                         fs = [x.get("foto", "")] + [s.get("foto", "") for s in D["sublokasi"] if s["lokasi"] == x["id"]]
+                        fs += [f for r in D.get("rapi", []) if r.get("lokasi") == x["id"] for f in (r.get("sebelum"), r.get("sesudah"))]
+                        D["rapi"] = [r for r in D.get("rapi", []) if r.get("lokasi") != x["id"]]
                         D["lokasi"] = [y for y in D["lokasi"] if y["id"] != x["id"]]
                         D["sublokasi"] = [y for y in D["sublokasi"] if y["lokasi"] != x["id"]]
                         selesai_simpan("Dihapus.", sesudah=lambda fs=fs: [hapus_foto(p) for p in fs if p],

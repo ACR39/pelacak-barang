@@ -6,6 +6,7 @@ import streamlit as st
 from pelacak.bantu import (
     daftar_lokasi, induk_dari, isi_dari, jumlah_b, lencana, nama_lok, saring_barang, sub_dari,
 )
+from pelacak.rapi import tampil_rapi
 from pelacak.inti import D, TANPA, TGL_MAX, TGL_MIN, fmt_waktu
 
 
@@ -123,9 +124,12 @@ def halaman_jelajah():
         q = " ".join(kq.text_input("Pencarian", key="jl_q", icon=":material/search:",
                                    placeholder="Cari barang di semua lokasi...",
                                    label_visibility="collapsed").lower().split())
-        mode = st.segmented_control("Tampilan", ["Daftar", "Denah"], default="Daftar", key="jl_mode",
+        mode = st.segmented_control("Tampilan", ["Daftar", "Denah", "Sebelum-sesudah"], default="Daftar", key="jl_mode",
                                     label_visibility="collapsed") or "Daftar"
-        buka_semua = kb.toggle("Buka semua", key="jl_buka", disabled=mode == "Denah")
+        buka_semua = kb.toggle("Buka semua", key="jl_buka", disabled=mode != "Daftar")
+        if mode == "Sebelum-sesudah":
+            tampil_rapi()
+            return
         if q:
             atas, _mirip_n = saring_barang(atas, q)
         if mode == "Denah":

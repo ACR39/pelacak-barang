@@ -67,7 +67,7 @@ DESKRIPSI = {
     "Dibawa, hilang, rusak": "Barang yang sedang dibawa keluar, belum ketemu, rusak, atau sedang diservis.",
     "Catatan perawatan": "Riwayat servis, perbaikan, dan perawatan tiap barang beserta biayanya.",
     "Ukuran data": "Pantau besar data dan foto di penyimpanan, dan bersihkan foto yang tidak terpakai.",
-    "Jelajah lokasi": "Telusuri isi tiap tempat, lokasi, dan sub lokasi sebagai daftar, atau lihat denah petak per lokasi.",
+    "Jelajah lokasi": "Telusuri isi tiap tempat dan lokasi sebagai daftar, lihat denah petak, atau simpan foto sebelum dan sesudah merapikan.",
     "Tempat sampah": "Barang yang dibuang disimpan 30 hari di sini, bisa dipulihkan sebelum hilang permanen.",
     "Pinjam-meminjam": "Catat barang yang kamu pinjamkan atau yang kamu pinjam, lengkap dengan tenggatnya.",
     "Belanja": "Stok menipis atau habis (otomatis) dan rencana barang baru yang ingin dibeli, dalam satu daftar belanja.",

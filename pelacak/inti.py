@@ -195,6 +195,7 @@ def data_kosong() -> dict:
         "label_daftar": [],    # nama label yang ditambah dari Pengaturan
         "pengaturan": {},  # {"kartu":[bagian yang disembunyikan],"beranda":[...]}  bawaan bersama semua perangkat
         "pindah_massal": [],  # [{"id","waktu","oleh","tujuan":{lokasi,sublokasi},"tujuan_nama","item":[{id,nama,dari:{lokasi,sublokasi,dalam}}],"dibatalkan"}]
+        "rapi": [],       # [{"id","lokasi","tgl","sebelum","sesudah","catatan"}]  foto sebelum/sesudah merapikan lokasi
         "sampah": [],     # [{"id","barang":{...data barang...},"dihapus":"YYYY-MM-DD HH:MM","oleh"}]  tempat sampah
     }
 
@@ -335,13 +336,13 @@ CSS_TERANG = """
   .kepala{padding:.9rem 1rem}
   .judul-hal{font-size:1.35rem}
 }
-/* Di HP tabel tidak ditumpuk ke bawah, tapi dilebarkan dan bisa digeser ke samping */
+/* Di HP tabel tidak ditumpuk ke bawah, tapi dilebarkan dan bisa digeser ke samping (hanya di kartu yang boleh digeser) */
 @media (max-width:640px){
   .st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_g_rencana,[class*="st-key-kartu_tgl"]{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  [data-testid="stHorizontalBlock"]:has(.brg),[data-testid="stHorizontalBlock"]:has(.thead-s){flex-wrap:nowrap !important;min-width:780px}
-  [data-testid="stHorizontalBlock"]:has(.brg) > [data-testid="stColumn"],[data-testid="stHorizontalBlock"]:has(.thead-s) > [data-testid="stColumn"]{min-width:0 !important;width:auto !important}
-  [data-testid="stHorizontalBlock"]:has(.brg) [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important;min-width:0 !important}
-  [data-testid="stHorizontalBlock"]:has(.brg) [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]{min-width:0 !important;width:auto !important}
+  :is(.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_g_rencana,[class*="st-key-kartu_tgl"]) [data-testid="stHorizontalBlock"]:has(.brg),:is(.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_g_rencana,[class*="st-key-kartu_tgl"]) [data-testid="stHorizontalBlock"]:has(.thead-s){flex-wrap:nowrap !important;min-width:780px}
+  :is(.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_g_rencana,[class*="st-key-kartu_tgl"]) [data-testid="stHorizontalBlock"]:has(.brg) > [data-testid="stColumn"],:is(.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_g_rencana,[class*="st-key-kartu_tgl"]) [data-testid="stHorizontalBlock"]:has(.thead-s) > [data-testid="stColumn"]{min-width:0 !important;width:auto !important}
+  :is(.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_g_rencana,[class*="st-key-kartu_tgl"]) [data-testid="stHorizontalBlock"]:has(.brg) [data-testid="stHorizontalBlock"]{flex-wrap:nowrap !important;min-width:0 !important}
+  :is(.st-key-kartu_tabel,.st-key-kartu_barang,.st-key-kartu_g_rencana,[class*="st-key-kartu_tgl"]) [data-testid="stHorizontalBlock"]:has(.brg) [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]{min-width:0 !important;width:auto !important}
   .st-key-kartu_tabel .garis,.st-key-kartu_barang .garis,.st-key-kartu_g_rencana .garis,[class*="st-key-kartu_tgl"] .garis{min-width:780px}
 }
 /* Tampilan kartu barang */

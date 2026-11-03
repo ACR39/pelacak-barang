@@ -49,6 +49,10 @@ def foto_terpakai() -> set:
     for x in D["lokasi"] + D["sublokasi"]:
         if x.get("foto"):
             pakai.add(x["foto"])
+    for p in D["pinjam"]:
+        pakai.update(f for f in (p.get("foto_pinjam"), p.get("foto_kembali")) if f)
+    for r in D.get("rapi", []):
+        pakai.update(f for f in (r.get("sebelum"), r.get("sesudah")) if f)
     return pakai
 
 
@@ -61,6 +65,10 @@ def ganti_path_foto(lama: str, baru: str):
     for x in D["lokasi"] + D["sublokasi"]:
         if x.get("foto") == lama:
             x["foto"] = baru
+    for x in D["pinjam"] + D.get("rapi", []):
+        for k in ("foto_pinjam", "foto_kembali", "sebelum", "sesudah"):
+            if x.get(k) == lama:
+                x[k] = baru
 
 
 def kecilkan_jpeg(mentah: bytes, sisi: int) -> bytes:
