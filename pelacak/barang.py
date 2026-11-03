@@ -6,7 +6,7 @@ import uuid
 import streamlit as st
 
 from pelacak.bantu import (
-    ATRIBUT, MAKS_GALERI, MAKS_LAMPIRAN, MAKS_LAMPIRAN_MB, _norm_nama, atur, buang_barang,
+    ATRIBUT, MAKS_GALERI, MAKS_LAMPIRAN, MAKS_LAMPIRAN_MB, MAKS_UNGGAH_MB, _norm_nama, atur, buang_barang,
     catat, daftar_lokasi, daftar_pemilik, daftar_tag, ganti_tiap_b, harga_asli_b, harga_b, idx, induk_dari, isi_dari,
     jumlah_b, kartu_barang_html, keturunan, lencana, lokasi_dari, minimum_b, nama_kat, nama_lok,
     nama_tempat, peringatan_serupa, pesan_hapus_barang, saring_barang, selesai_simpan,
@@ -17,6 +17,7 @@ from pelacak.beranda import CEK_OPSI, cek_tiap_b
 from pelacak.inti import (
     D, GANTI_OPSI, TANPA_KAT, TGL_MAX, TGL_MIN, adalah_admin, hari_ini, iso_ke_date, teks_cek, teks_ganti,
 )
+from pelacak.kompres_pdf import kompres_lampiran
 from pelacak.penyimpanan import _tulis_foto, ambil_foto, hapus_foto, simpan_foto
 
 
@@ -492,7 +493,9 @@ def halaman_barang():
                     hapus_l.append(x["path"])
             upl_l = st.file_uploader("Lampiran dokumen PDF (boleh banyak)", type=["pdf"], accept_multiple_files=True,
                                      key=f"upl_l_{mode}_{versi()}",
-                                     help=f"Nota, buku manual, atau kartu garansi. Maksimal {MAKS_LAMPIRAN} berkas, masing-masing {MAKS_LAMPIRAN_MB} MB.")
+                                     help=f"Nota, buku manual, atau kartu garansi. Maksimal {MAKS_LAMPIRAN} berkas, "
+                                          f"masing-masing {MAKS_LAMPIRAN_MB} MB setelah dikompres. PDF sampai {MAKS_UNGGAH_MB} MB "
+                                          "diterima dan otomatis dikompres supaya muat.")
             catatan = st.text_area("Catatan", value=b.get("catatan", ""),
                                    help="Alamat web yang kamu tulis di sini otomatis bisa diklik.")
             tautan = st.text_area("Tautan (satu per baris, boleh kosong)", value=b.get("tautan", ""), height=90,
@@ -539,15 +542,24 @@ def halaman_barang():
                                 galat = f"Foto tambahan gagal diunggah: {e}"
                                 break
                     sisa_l = [x for x in lamp_lama if x["path"] not in hapus_l]
-                    lamp_baru = []
+                    lamp_baru, ket_kompres = [], []
                     if not galat and len(sisa_l) + len(upl_l or []) > MAKS_LAMPIRAN:
                         galat = f"Lampiran maksimal {MAKS_LAMPIRAN} berkas per barang."
                     if not galat:
+                        batas_l = MAKS_LAMPIRAN_MB * 1024 * 1024
                         for f in (upl_l or []):
                             isi_f = f.getvalue()
-                            if len(isi_f) > MAKS_LAMPIRAN_MB * 1024 * 1024:
-                                galat = f"{f.name} lebih dari {MAKS_LAMPIRAN_MB} MB."
+                            if len(isi_f) > MAKS_UNGGAH_MB * 1024 * 1024:
+                                galat = f"{f.name} lebih dari {MAKS_UNGGAH_MB} MB, terlalu besar untuk diproses."
                                 break
+                            with st.spinner(f"Memeriksa dan mengompres {f.name[:40]}..."):
+                                isi_f, ket = kompres_lampiran(isi_f, batas_l)
+                            if len(isi_f) > batas_l:
+                                galat = (f"{f.name} masih lebih dari {MAKS_LAMPIRAN_MB} MB setelah dikompres. "
+                                         "Kecilkan dulu atau pecah menjadi beberapa berkas.")
+                                break
+                            if ket:
+                                ket_kompres.append(f"{f.name[:40]}: {ket}")
                             try:
                                 lamp_baru.append({"path": _tulis_foto(id_, isi_f, "pdf"), "nama": f.name[:80]})
                             except Exception as e:
@@ -611,6 +623,6 @@ def halaman_barang():
                                 catat(id_, nama, nama_tempat(b), tempat_baru)
                             D["barang"] = [baru if x["id"] == mode else x for x in D["barang"]]
                         sinkron_isi(id_)
-                        selesai_simpan("Tersimpan.",
+                        selesai_simpan("Tersimpan." + (" Lampiran " + "; ".join(ket_kompres) + "." if ket_kompres else ""),
                                        sesudah=(lambda fs=fotos_hapus: [hapus_foto(p) for p in fs]) if fotos_hapus else None,
                                        br_mode=None)

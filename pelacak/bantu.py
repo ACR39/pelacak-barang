@@ -490,6 +490,7 @@ KONDISI = {"rusak": "Rusak", "servis": "Sedang diservis"}
 
 
 MAKS_LAMPIRAN, MAKS_LAMPIRAN_MB = 5, 5
+MAKS_UNGGAH_MB = 30        # PDF sebesar ini masih diterima, lalu dikompres supaya muat MAKS_LAMPIRAN_MB
 
 
 def semua_berkas(b: dict) -> list:
