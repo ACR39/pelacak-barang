@@ -22,6 +22,7 @@ from pelacak.master import (
 from pelacak.opname import halaman_opname
 from pelacak.pemeliharaan import halaman_pulih, halaman_ukuran
 from pelacak.pengingat import halaman_ganti, halaman_pengingat
+from pelacak.pwa import pasang_pwa
 from pelacak.penyimpanan import ambil_snap, muat_ke_sesi
 from pelacak.pindah import halaman_pindah
 from pelacak.pinjam import halaman_pinjam
@@ -311,6 +312,7 @@ def tampilkan_halaman(halaman):
 
 def jalankan():
     pasang_css()
+    pasang_pwa()
     siapkan_sesi()
     peringatan_uji()
     PENGATURAN, halaman = pilih_halaman()
