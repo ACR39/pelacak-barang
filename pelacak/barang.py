@@ -606,6 +606,12 @@ def halaman_barang():
                             baru.setdefault("cek_terakhir", hari_ini().isoformat())
                         else:
                             baru.pop("cek_terakhir", None)
+                        if baru.get("riwayat_harga"):      # form mengubah pembelian terbaru di riwayat harga
+                            t = sorted(baru["riwayat_harga"], key=lambda x: (x.get("tgl") or "0000-00-00"))[-1]
+                            t["harga"], t["harga_asli"] = int(harga), int(harga_asli)
+                            t["toko"], t["tgl"] = toko.strip(), tb.isoformat() if tb else t.get("tgl", "")
+                            if not int(harga):
+                                baru["riwayat_harga"].remove(t)
                         fotos_hapus = list(hapus_g)
                         if foto_baru:
                             baru["foto"] = foto_baru

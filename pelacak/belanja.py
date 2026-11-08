@@ -214,11 +214,14 @@ def halaman_rencana():
 # -------------------------------------------------------------------- belanja
 def halaman_belanja():
     """Satu menu belanja: stok yang menipis (otomatis) dan rencana barang baru."""
-    t1, t2 = st.tabs(["Stok menipis", "Barang baru"])
+    t1, t2, t3 = st.tabs(["Stok menipis", "Barang baru", "Riwayat harga"])
     with t1:
         halaman_beli()
     with t2:
         halaman_rencana()
+    with t3:
+        from pelacak.harga import halaman_harga
+        halaman_harga()
 
 
 # -------------------------------------------------------------- daftar bawaan
