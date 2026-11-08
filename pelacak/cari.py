@@ -4,15 +4,48 @@ import html
 import streamlit as st
 
 from pelacak.bantu import (
-    daftar_lokasi, daftar_pemilik, daftar_tag, judul_grup, kartu_barang_html, kelompok, lencana,
+    daftar_lokasi, daftar_pemilik, daftar_tag, harga_b, jumlah_b, judul_grup, perlu_beli, kartu_barang_html, kelompok, lencana,
     lokasi_dari, nama_kat, nama_lok, saring_barang, sub_dari, tampil_foto_kecil, tampil_galeri,
     tampil_lampiran,
 )
-from pelacak.inti import D, fmt_iso
+from pelacak.inti import D, fmt_iso, sisa_hari
 from pelacak.penyimpanan import ambil_foto
 
 
 # ---------------------------------------------------------------- cari barang
+def _tgl_urut(b, kunci):
+    return b.get(kunci) or ""
+
+
+URUTAN = {
+    "Bawaan (per lokasi)": None,
+    "Nama A-Z": lambda b: b["nama"].lower(),
+    "Terakhir diubah": lambda b: _tgl_urut(b, "diubah"),
+    "Terakhir dibeli": lambda b: _tgl_urut(b, "dibeli"),
+    "Harga termahal": lambda b: harga_b(b),
+    "Harga termurah": lambda b: harga_b(b) or 10 ** 12,
+    "Stok tersedikit": lambda b: jumlah_b(b),
+    "Kedaluwarsa terdekat": lambda b: b.get("kedaluwarsa") or "9999-12-31",
+}
+BALIK = {"Terakhir diubah", "Terakhir dibeli", "Harga termahal"}
+
+
+def grup_hasil(hasil, urut):
+    """Bawaan: dikelompokkan per lokasi. Urutan lain: satu daftar tanpa kelompok."""
+    if URUTAN.get(urut) is None:
+        return kelompok(hasil)
+    return [(f"Diurutkan: {urut.lower()}", sorted(hasil, key=URUTAN[urut], reverse=urut in BALIK))]
+
+
+STATUS_CARI = {
+    "Semua status": lambda b: True,
+    "Perlu beli atau menipis": perlu_beli,
+    "Garansi masih berlaku": lambda b: sisa_hari(b.get("garansi")) is not None and sisa_hari(b["garansi"]) >= 0,
+    "Sudah kedaluwarsa": lambda b: sisa_hari(b.get("kedaluwarsa")) is not None and sisa_hari(b["kedaluwarsa"]) < 0,
+    "Kedaluwarsa 30 hari": lambda b: sisa_hari(b.get("kedaluwarsa")) is not None and 0 <= sisa_hari(b["kedaluwarsa"]) <= 30,
+    "Belum ada harga": lambda b: not harga_b(b),
+}
+
 def halaman_cari():
     if not D["barang"]:
         st.info("Belum ada barang. Tambahkan lewat menu Barang > Kelola barang.")
@@ -56,6 +89,17 @@ def halaman_cari():
             if daftar_tag():
                 st.session_state.cari_tag = [t for t in st.session_state.get("cari_tag", []) if t in daftar_tag()]
                 f_tag = st.multiselect("Label", daftar_tag(), key="cari_tag", placeholder="Semua label")
+            f_toko = "semua"
+            u1, u2, u3 = st.columns(3)
+            urut = u1.selectbox("Urutkan", list(URUTAN), key="cari_urut")
+            tokos = sorted({b["toko"].strip() for b in D["barang"] if b.get("toko", "").strip()}, key=str.lower)
+            if tokos:
+                if st.session_state.get("cari_toko", "semua") not in ["semua"] + tokos:
+                    st.session_state.cari_toko = "semua"
+                f_toko = u2.selectbox("Beli di", ["semua"] + tokos, key="cari_toko",
+                                      format_func=lambda x: "Semua toko" if x == "semua" else x)
+            f_stat = u3.selectbox("Status", list(STATUS_CARI), key="cari_status")
+            f_stat = "semua" if f_stat == "Semua status" else f_stat
             tv1, tv2, tv3 = st.columns([2, 2, 2], vertical_alignment="center")
             mode_tampil = tv1.segmented_control("Tampilan", ["Kartu", "Tabel"], default="Kartu",
                                                 key="tampilan", label_visibility="collapsed") or "Kartu"
@@ -74,6 +118,10 @@ def halaman_cari():
             hasil = [b for b in hasil if not b.get("pemilik")]
         elif f_pem != "semua":
             hasil = [b for b in hasil if b.get("pemilik") == f_pem]
+        if f_toko != "semua":
+            hasil = [b for b in hasil if b.get("toko", "").strip() == f_toko]
+        if f_stat != "semua":
+            hasil = [b for b in hasil if STATUS_CARI[f_stat](b)]
         if f_fav:
             hasil = [b for b in hasil if b.get("favorit")]
         if f_tag:
@@ -94,9 +142,10 @@ def halaman_cari():
         if not hasil:
             st.info("Tidak ada barang yang cocok.")
         elif mode_tampil == "Kartu":
-            for judul, anggota in kelompok(hasil):
+            for judul, anggota in grup_hasil(hasil, urut):
                 judul_grup(judul, len(anggota))
-                for b in sorted(anggota, key=lambda x: (not x.get("favorit"), x["nama"].lower())):
+                for b in (anggota if urut != "Bawaan (per lokasi)"
+                          else sorted(anggota, key=lambda x: (not x.get("favorit"), x["nama"].lower()))):
                     with st.container(key=f"item_c_{b['id']}"):
                         st.markdown(kartu_barang_html(b, tampil_foto), unsafe_allow_html=True)
                         tampil_galeri(b)
@@ -110,9 +159,9 @@ def halaman_cari():
                 kep = st.columns(lebar, vertical_alignment="top")
                 for kol, judul in zip(kep, judul_kol):
                     kol.markdown(f'<div class="thead-s">{judul}</div>', unsafe_allow_html=True)
-                for judul, anggota in kelompok(hasil):
+                for judul, anggota in grup_hasil(hasil, urut):
                     judul_grup(judul, len(anggota))
-                    for b in sorted(anggota, key=lambda x: x["nama"].lower()):
+                    for b in (anggota if urut != "Bawaan (per lokasi)" else sorted(anggota, key=lambda x: x["nama"].lower())):
                         k = st.columns(lebar, vertical_alignment="center")
                         o = 0
                         if tampil_foto:

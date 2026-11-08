@@ -13,11 +13,11 @@ from pelacak.inti import cfg_github
 # Akun disimpan di Streamlit Secrets, satu bagian per pengguna:
 #   [users.budi]
 #   nama = "Budi Santoso"
-#   peran = "admin"                 # "admin" (boleh ubah master data) atau "pengisi"
+#   peran = "admin"                 # "admin" (boleh ubah master data), "pengisi", atau "lihat" (hanya melihat)
 #   password_hash = "pbkdf2$..."    # buat dengan buat_hash.py
 # Kalau tidak ada bagian [users], dipakai kata sandi tunggal (secret "password")
 # atau, kalau itu juga tidak ada, tanpa login (uji coba).
-PERAN = ("admin", "pengisi")
+PERAN = ("admin", "pengisi", "lihat")
 
 
 MAKS_GAGAL = 5

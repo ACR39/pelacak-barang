@@ -1,10 +1,11 @@
 """Riwayat harga beli: catat tiap pembelian, lihat termurah, rata-rata, dan tren."""
 import uuid
+from datetime import timedelta
 
 import pandas as pd
 import streamlit as st
 
-from pelacak.bantu import harga_asli_b, harga_b, jumlah_b, nama_tempat, selesai_simpan, versi
+from pelacak.bantu import harga_asli_b, harga_b, jumlah_b, nama_kat, nama_tempat, selesai_simpan, versi
 from pelacak.inti import D, fmt_iso, hari_ini, iso_ke_date, rp
 
 
@@ -21,7 +22,7 @@ def riwayat_b(b: dict) -> list:
     r = [dict(x) for x in b.get("riwayat_harga", []) if _int(x.get("harga"))]
     if not r and harga_b(b):
         r = [{"id": "awal", "tgl": b.get("dibeli") or "", "harga": harga_b(b), "harga_asli": harga_asli_b(b),
-              "toko": b.get("toko", ""), "jumlah": 1, "catatan": ""}]
+              "toko": b.get("toko", ""), "jumlah": max(jumlah_b(b), 1), "catatan": ""}]
     return sorted(r, key=lambda x: (x.get("tgl") or "0000-00-00"))
 
 
@@ -68,8 +69,8 @@ def catat_pembelian(b: dict, tgl: str, harga: int, harga_asli: int, toko: str, j
     """Tambah satu pembelian ke barang. Pembelian awal dari data utama dijadikan entri pertama."""
     if not b.get("riwayat_harga") and harga_b(b):
         b["riwayat_harga"] = [{"id": uuid.uuid4().hex[:8], "tgl": b.get("dibeli") or "", "harga": harga_b(b),
-                               "harga_asli": harga_asli_b(b), "toko": b.get("toko", ""), "jumlah": 1,
-                               "catatan": ""}]
+                               "harga_asli": harga_asli_b(b), "toko": b.get("toko", ""),
+                               "jumlah": max(jumlah_b(b), 1), "catatan": ""}]
     b.setdefault("riwayat_harga", []).append(
         {"id": uuid.uuid4().hex[:8], "tgl": tgl, "harga": int(harga), "harga_asli": int(harga_asli or 0),
          "toko": toko.strip(), "jumlah": int(jumlah), "catatan": catatan.strip()})
@@ -152,3 +153,100 @@ def halaman_harga():
                 "Termurah": rp(_int(r["termurah"]["harga"])), "Rata-rata": rp(r["rata"]),
                 "Tren": r["tren"].split(" dari")[0] or "-"} for r, x in banding]),
                 hide_index=True, width="stretch")
+
+
+# ------------------------------------------------------------------ pengeluaran
+def semua_pembelian() -> list:
+    """Semua pembelian semua barang: [(barang, entri)] termasuk barang yang harganya hanya di data utama."""
+    hasil = []
+    for b in D["barang"]:
+        for x in riwayat_b(b):
+            hasil.append((b, x))
+    return hasil
+
+
+def halaman_pengeluaran():
+    beli = semua_pembelian()
+    if not beli:
+        st.info("Belum ada harga beli. Isi harga di Kelola barang atau catat pembelian di Belanja > Riwayat harga.")
+        return
+    tahun = sorted({(x.get("tgl") or "")[:4] for _, x in beli if (x.get("tgl") or "")[:4].isdigit()}, reverse=True)
+    with st.container(key="kartu_pengeluaran"):
+        pil = st.selectbox("Periode", ["Semua"] + tahun, key="pg_tahun",
+                           format_func=lambda t: "Semua waktu" if t == "Semua" else f"Tahun {t}")
+        pakai = [(b, x) for b, x in beli if pil == "Semua" or (x.get("tgl") or "")[:4] == pil]
+        tanpa_tgl = [(b, x) for b, x in pakai if not x.get("tgl")]
+
+        def total(x):
+            return _int(x["harga"]) * (_int(x.get("jumlah")) or 1)
+
+        jumlah_total = sum(total(x) for _, x in pakai)
+        hemat = sum(max(_int(x.get("harga_asli")) - _int(x["harga"]), 0) * (_int(x.get("jumlah")) or 1)
+                    for _, x in pakai if _int(x.get("harga_asli")))
+        a, c = st.columns(2)
+        a.metric("Total pengeluaran", rp(jumlah_total))
+        c.metric("Hemat dari diskon", rp(hemat))
+        st.caption(f"{len(pakai)} pembelian"
+                   + (f" · {len(tanpa_tgl)} tanpa tanggal tidak masuk grafik bulanan" if tanpa_tgl else ""))
+
+        bln = {}
+        for b, x in pakai:
+            k = (x.get("tgl") or "")[:7]
+            if len(k) == 7:
+                bln[k] = bln.get(k, 0) + total(x)
+        if bln:
+            st.markdown("**Per bulan**")
+            urut = sorted(bln)
+            st.bar_chart(pd.DataFrame({"Bulan": urut, "Pengeluaran": [bln[k] for k in urut]}),
+                         x="Bulan", y="Pengeluaran", color="#2b7a57", height=240)
+
+        def grup(fungsi):
+            h = {}
+            for b, x in pakai:
+                k = fungsi(b, x) or "Tidak diisi"
+                h[k] = h.get(k, 0) + total(x)
+            return sorted(h.items(), key=lambda kv: -kv[1])[:10]
+
+        for judul, fn in (("Per kategori", lambda b, x: nama_kat(b) if b.get("kategori") else ""),
+                          ("Per toko", lambda b, x: (x.get("toko") or "").strip())):
+            baris = grup(fn)
+            st.markdown(f"**{judul}**")
+            st.dataframe(pd.DataFrame([{"Nama": k, "Total": rp(v),
+                                        "Porsi": f"{round(v * 100 / jumlah_total)}%" if jumlah_total else "-"}
+                                       for k, v in baris]), hide_index=True, width="stretch")
+
+
+# --------------------------------------------------------------- perkiraan habis
+def perkiraan_habis(b: dict):
+    """Perkirakan kapan stok habis dari kecepatan pembelian. None kalau datanya belum cukup.
+    Pemakaian = semua yang dibeli kecuali pembelian terakhir, dibagi selang hari dari pembelian pertama
+    sampai terakhir. Hasil: {"per_hari","sisa_hari","tanggal","n"}."""
+    r = [x for x in riwayat_b(b) if iso_ke_date(x.get("tgl"))]
+    if len(r) < 2:
+        return None
+    selang = (iso_ke_date(r[-1]["tgl"]) - iso_ke_date(r[0]["tgl"])).days
+    terpakai = sum((_int(x.get("jumlah")) or 1) for x in r[:-1])
+    if selang <= 0 or terpakai <= 0:
+        return None
+    per_hari = terpakai / selang
+    sisa = jumlah_b(b) / per_hari
+    return {"per_hari": per_hari, "sisa_hari": int(sisa), "tanggal": hari_ini() + timedelta(days=int(sisa)), "n": len(r)}
+
+
+def halaman_perkiraan():
+    hasil = [(perkiraan_habis(b), b) for b in D["barang"]]
+    hasil = sorted([(p, b) for p, b in hasil if p], key=lambda x: x[0]["sisa_hari"])
+    with st.container(key="kartu_perkiraan"):
+        if not hasil:
+            st.info("Belum ada barang dengan 2 pembelian bertanggal atau lebih. Catat pembelian di tab Riwayat harga, "
+                    "nanti di sini muncul perkiraan kapan barang habis.")
+            return
+        st.caption("Perkiraan dari kecepatan beli sebelumnya dan jumlah stok sekarang. Hasilnya akurat kalau jumlah "
+                   "stok selalu kamu perbarui saat barang dipakai.")
+        for p, b in hasil:
+            per = p["per_hari"] * 30
+            status = ("sudah habis" if p["sisa_hari"] <= 0 else f"habis sekitar {fmt_iso(p['tanggal'].isoformat())}"
+                      f" ({p['sisa_hari']} hari lagi)")
+            ikon = "🔴" if p["sisa_hari"] <= 7 else "🟡" if p["sisa_hari"] <= 30 else "🟢"
+            st.markdown(f"{ikon} **{b['nama']}** · {status}")
+            st.caption(f"Stok {jumlah_b(b)} · pemakaian sekitar {per:.1f} per bulan · dari {p['n']} pembelian")

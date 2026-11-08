@@ -12,7 +12,7 @@ import streamlit as st
 
 from pelacak.inti import (
     FILE_LOKAL, FOTO_LOKAL, Image, ImageOps, MAKS_AKTIVITAS, WIB, cfg_github, data_kosong,
-    fmt_iso, konversi_lama, pengguna_nama, sekarang, teks_cek, teks_ganti,
+    fmt_iso, hanya_lihat, konversi_lama, pengguna_nama, sekarang, teks_cek, teks_ganti,
 )
 
 
@@ -222,6 +222,10 @@ def catat_aktivitas():
 
 def commit(pesan_ok: str | None = None) -> bool:
     """Simpan st.session_state.data. Tampilkan hasilnya ke pengguna."""
+    if hanya_lihat():
+        muat_ke_sesi()
+        st.error("Akun ini hanya bisa melihat, perubahan tidak disimpan.")
+        return False
     try:
         catat_aktivitas()
     except Exception:
@@ -263,6 +267,8 @@ def simpan_foto(id_barang: str, mentah: bytes) -> str:
 
 def _tulis_foto(id_barang: str, isi: bytes, ext: str = "jpg") -> str:
     """Tulis berkas foto yang sudah jadi ke penyimpanan, kembalikan path-nya."""
+    if hanya_lihat():
+        raise PermissionError("Akun ini hanya bisa melihat.")
     path = f"foto/{id_barang}_{int(time.time())}{uuid.uuid4().hex[:4]}.{ext}"
     c = cfg_github()
     if c:

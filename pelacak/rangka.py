@@ -11,8 +11,12 @@ from pelacak.belanja import halaman_belanja, halaman_paket
 from pelacak.beranda import halaman_beranda, pesan_tenggat
 from pelacak.cari import halaman_cari
 from pelacak.ekspor import halaman_ekspor
+from pelacak.harga import halaman_pengeluaran
 from pelacak.impor import halaman_impor
-from pelacak.inti import CSS_GELAP, D, adalah_admin, cfg_github, data_kosong, pasang_css
+from pelacak.kalender import halaman_kalender
+from pelacak.keluar import halaman_keluar
+from pelacak.klaim import halaman_klaim
+from pelacak.inti import CSS_GELAP, D, adalah_admin, cfg_github, data_kosong, hanya_lihat, pasang_css
 from pelacak.jarang_nilai import _tabel_tanggal, halaman_jarang, halaman_nilai
 from pelacak.jelajah import halaman_jelajah, halaman_riwayat
 from pelacak.master import (
@@ -35,14 +39,20 @@ from pelacak.tampilan import halaman_tampilan, halaman_tampilan_kartu
 UTAMA = ["Cari barang", "Scan barcode", "Jelajah lokasi", "Kelola barang", "Pindah massal", "Inventaris ulang", "Riwayat",
          "Tempat sampah"]
 PANTAU = ["Pinjam-meminjam", "Dibawa, hilang, rusak", "Belanja", "Daftar bawaan", "Jarang dipakai",
-          "Jatuh tempo", "Catatan perawatan", "Statistik"]
+          "Jatuh tempo", "Catatan perawatan", "Dijual dan diberikan", "Statistik"]
+EDIT_SAJA = ("Kelola barang", "Pindah massal", "Inventaris ulang", "Tempat sampah", "Scan barcode")
+
+
+def menu_utama() -> list:
+    """Menu Barang. Akun hanya-lihat tidak mendapat menu yang khusus untuk mengubah data."""
+    return [h for h in UTAMA if not (hanya_lihat() and h in EDIT_SAJA)]
 MASTER = ["Tempat dan lokasi", "Kategori dan label", "Label QR", "Ukuran data", "Cadangan dan pulihkan"]
 IKON = {"Beranda": "home", "Cari barang": "search", "Kelola barang": "inventory_2", "Scan barcode": "barcode_scanner",
         "Jelajah lokasi": "account_tree", "Pindah massal": "swap_horiz", "Inventaris ulang": "fact_check",
         "Riwayat": "history", "Tempat sampah": "delete",
         "Pinjam-meminjam": "handshake", "Dibawa, hilang, rusak": "backpack", "Belanja": "shopping_cart",
         "Daftar bawaan": "luggage", "Jarang dipakai": "schedule", "Jatuh tempo": "event_busy",
-        "Catatan perawatan": "build", "Statistik": "bar_chart",
+        "Catatan perawatan": "build", "Statistik": "bar_chart", "Dijual dan diberikan": "sell",
         "Tampilan": "tune", "Ekspor dan impor": "import_export",
         "Tempat dan lokasi": "home_work", "Kategori dan label": "sell", "Label QR": "qr_code_2",
         "Ukuran data": "database", "Cadangan dan pulihkan": "backup"}
@@ -54,8 +64,9 @@ LOGO = ('<svg width="38" height="38" viewBox="0 0 38 38" xmlns="http://www.w3.or
         '<path d="M10 12.5l9 4.5 9-4.5M19 17v11" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>')
 DESKRIPSI = {
     "Riwayat": "Perpindahan barang dan aktivitas (tambah, ubah, buang, pulihkan) yang tercatat otomatis.",
-    "Jatuh tempo": "Pantau kedaluwarsa, masa garansi, dan barang yang perlu dicek rutin.",
-    "Statistik": "Barang yang sering pindah, jumlah per lokasi, aktivitas bulanan, per pemilik, kelengkapan data, dan nilai barang.",
+    "Jatuh tempo": "Pantau kedaluwarsa, masa garansi, klaim garansi, dan barang yang perlu dicek rutin. Bisa diunduh ke kalender HP.",
+    "Statistik": "Barang yang sering pindah, jumlah per lokasi, aktivitas bulanan, per pemilik, kelengkapan data, nilai barang, dan pengeluaran.",
+    "Dijual dan diberikan": "Barang yang sudah dijual atau diberikan: keluar dari daftar, tapi harga jual dan penerimanya tetap tercatat.",
     "Tampilan": "Pilih kartu di Beranda dan keterangan di kartu barang. Bisa disimpan untuk semua perangkat.",
     "Tempat dan lokasi": "Tiga tingkat penyimpanan: tempat, lokasi, dan sub lokasi.",
     "Kategori dan label": "Kelola kategori, pemilik, dan label barang: ubah nama atau gabungkan yang ganda.",
@@ -71,7 +82,7 @@ DESKRIPSI = {
     "Jelajah lokasi": "Telusuri isi tiap tempat dan lokasi sebagai daftar, lihat denah petak, atau simpan foto sebelum dan sesudah merapikan.",
     "Tempat sampah": "Barang yang dibuang disimpan 30 hari di sini, bisa dipulihkan sebelum hilang permanen.",
     "Pinjam-meminjam": "Catat barang yang kamu pinjamkan atau yang kamu pinjam, lengkap dengan tenggatnya.",
-    "Belanja": "Stok menipis atau habis (otomatis) dan rencana barang baru yang ingin dibeli, dalam satu daftar belanja.",
+    "Belanja": "Stok menipis atau habis, rencana barang baru, riwayat harga beli, dan perkiraan kapan barang habis.",
     "Daftar bawaan": "Daftar barang untuk dibawa (liburan, pindahan, dll.) yang bisa dicentang satu per satu.",
     "Jarang dipakai": "Barang yang sudah lama tidak dipakai, untuk bahan membereskan atau melepas barang.",
     "Scan barcode": "Foto barcode di kemasan untuk menemukan barang, atau menambahkannya dengan nama yang terisi otomatis.",
@@ -152,7 +163,7 @@ def peringatan_uji():
 def pilih_halaman():
     """Daftar menu Pengaturan (admin melihat lebih banyak) dan halaman yang sedang dibuka."""
     PENGATURAN = ["Tampilan", "Ekspor dan impor"] + (MASTER if adalah_admin() else [])
-    HALAMAN = ["Beranda"] + UTAMA + PANTAU + PENGATURAN
+    HALAMAN = ["Beranda"] + menu_utama() + PANTAU + PENGATURAN
     if st.session_state.get("halaman") not in HALAMAN:
         st.session_state.halaman = "Beranda"
     halaman = st.session_state.halaman
@@ -170,8 +181,8 @@ def tampilkan_sidebar(halaman, PENGATURAN):
         st.markdown('<div class="grup">UTAMA</div>', unsafe_allow_html=True)
         tombol_nav("Beranda")
         st.markdown('<div class="grup">MENU</div>', unsafe_allow_html=True)
-        with st.expander("Barang", icon=":material/inventory_2:", expanded=halaman in UTAMA):
-            for h in UTAMA:
+        with st.expander("Barang", icon=":material/inventory_2:", expanded=halaman in menu_utama()):
+            for h in menu_utama():
                 tombol_nav(h)
         with st.expander("Pantau", icon=":material/monitoring:", expanded=halaman in PANTAU):
             for h in PANTAU:
@@ -189,6 +200,8 @@ def tampilkan_sidebar(halaman, PENGATURAN):
             st.rerun()
         if cfg_github():
             st.caption(f"Data: {cfg_github()['repo']}")
+        if hanya_lihat():
+            st.caption("🔒 Akun ini hanya bisa melihat.")
         _us = st.session_state.get("user")
         if _us:
             st.markdown(f'<div class="pengguna sb"><div class="av">{html.escape(_us["nama"][:1].upper())}</div><div>'
@@ -242,12 +255,17 @@ def tampilkan_halaman(halaman):
         halaman_belanja()
     if halaman == "Scan barcode":
         halaman_scan()
+    if halaman == "Dijual dan diberikan":
+        halaman_keluar()
     if halaman == "Ekspor dan impor":
-        t_ekspor, t_impor = st.tabs(["Ekspor", "Impor"])
-        with t_ekspor:
+        if hanya_lihat():
             halaman_ekspor()
-        with t_impor:
-            halaman_impor()
+        else:
+            t_ekspor, t_impor = st.tabs(["Ekspor", "Impor"])
+            with t_ekspor:
+                halaman_ekspor()
+            with t_impor:
+                halaman_impor()
     if halaman == "Daftar bawaan":
         halaman_paket()
     if halaman == "Jarang dipakai":
@@ -259,13 +277,16 @@ def tampilkan_halaman(halaman):
         with t_a:
             halaman_aktivitas()
     if halaman == "Statistik":
-        t_s, t_n = st.tabs(["Ringkasan", "Nilai barang"])
+        t_s, t_n, t_p = st.tabs(["Ringkasan", "Nilai barang", "Pengeluaran"])
         with t_s:
             halaman_statistik()
         with t_n:
             halaman_nilai()
+        with t_p:
+            halaman_pengeluaran()
     if halaman == "Jatuh tempo":
-        t_k, t_g, t_c, t_a = st.tabs(["Kedaluwarsa", "Garansi", "Cek berkala", "Waktu ganti"])
+        t_k, t_g, t_c, t_a, t_l, t_cal = st.tabs(["Kedaluwarsa", "Garansi", "Cek berkala", "Waktu ganti",
+                                                  "Klaim garansi", "Kalender"])
         with t_k:
             _tabel_tanggal("kedaluwarsa", "Kedaluwarsa")
         with t_g:
@@ -274,6 +295,10 @@ def tampilkan_halaman(halaman):
             halaman_pengingat()
         with t_a:
             halaman_ganti()
+        with t_l:
+            halaman_klaim()
+        with t_cal:
+            halaman_kalender()
     if halaman == "Tampilan":
         t_b, t_k = st.tabs(["Beranda", "Kartu barang"])
         with t_b:

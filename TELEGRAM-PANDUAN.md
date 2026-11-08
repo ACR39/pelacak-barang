@@ -21,4 +21,4 @@ Tambahkan `KIRIM_KOSONG=1` bila ingin tetap dikirimi pesan walau kosong.
 - Jadwal 07:00 WIB (`0 0 * * *` UTC). Jam bisa meleset beberapa menit.
 - GitHub menonaktifkan jadwal setelah 60 hari repositori tanpa aktivitas. Karena aplikasi menyimpan data ke repositori yang sama, ini jarang terjadi. Kalau terjadi, aktifkan lagi di tab Actions.
 - Repositori data harus berisi workflow ini. Kalau repositori data privat, Actions privat tetap gratis dalam batas bulanan.
-- Aturan di skrip meniru aplikasi. Kalau aturan di aplikasi berubah, perbarui `kirim_pengingat.py`.
+- Aturan di skrip meniru aplikasi (termasuk klaim garansi lebih dari 14 hari dan perkiraan habis 14 hari). Kalau aturan di aplikasi berubah, perbarui `kirim_pengingat.py`.

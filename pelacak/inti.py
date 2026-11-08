@@ -196,6 +196,8 @@ def data_kosong() -> dict:
         "pengaturan": {},  # {"kartu":[bagian yang disembunyikan],"beranda":[...]}  bawaan bersama semua perangkat
         "pindah_massal": [],  # [{"id","waktu","oleh","tujuan":{lokasi,sublokasi},"tujuan_nama","item":[{id,nama,dari:{lokasi,sublokasi,dalam}}],"dibatalkan"}]
         "rapi": [],       # [{"id","lokasi","tgl","sebelum","sesudah","catatan"}]  foto sebelum/sesudah merapikan lokasi
+        "klaim": [],      # [{"id","barang","nama","tgl","masalah","status","nomor","catatan","selesai"}]  klaim garansi
+        "keluar": [],     # [{"id","barang":{...},"jenis"("dijual"|"diberikan"),"tgl","harga","kepada","catatan","oleh"}]
         "sampah": [],     # [{"id","barang":{...data barang...},"dihapus":"YYYY-MM-DD HH:MM","oleh"}]  tempat sampah
     }
 
@@ -485,6 +487,11 @@ def cfg_github():
 def pengguna_nama() -> str:
     u = st.session_state.get("user")
     return u["username"] if u else "tamu"
+
+
+def hanya_lihat() -> bool:
+    u = st.session_state.get("user")
+    return bool(u) and u.get("peran") == "lihat"
 
 
 def adalah_admin() -> bool:
